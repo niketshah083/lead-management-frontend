@@ -120,7 +120,9 @@ import { FloatingChatWindow } from '../../../core/services/floating-chat.service
             [class.inbound]="message.direction === 'inbound'"
           >
             <div class="message-bubble">
-              @if (message.mediaUrl) {
+              @if (message.direction === 'outbound' && message.sender) {
+              <div class="sender-name">{{ message.sender.name }}</div>
+              } @if (message.mediaUrl) {
               <div class="message-media">
                 @if (message.mediaType === 'image') {
                 <p-image
@@ -250,6 +252,15 @@ import { FloatingChatWindow } from '../../../core/services/floating-chat.service
         user-select: none;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
           sans-serif;
+      }
+
+      @media (max-width: 640px) {
+        .floating-chat-window {
+          width: calc(100vw - 20px) !important;
+          max-width: 320px;
+          left: 10px !important;
+          right: 10px !important;
+        }
       }
 
       .floating-chat-window.minimized {
@@ -426,6 +437,13 @@ import { FloatingChatWindow } from '../../../core/services/floating-chat.service
         color: #1f2937;
         border-bottom-left-radius: 6px;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+
+      .sender-name {
+        font-size: 0.65rem;
+        font-weight: 600;
+        margin-bottom: 0.2rem;
+        opacity: 0.9;
       }
 
       .message-content {

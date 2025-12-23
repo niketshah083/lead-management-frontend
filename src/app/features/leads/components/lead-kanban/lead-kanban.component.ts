@@ -28,14 +28,16 @@ import {
   LeadStatusService,
   FloatingChatService,
 } from '../../../../core/services';
-import { ILead, ILeadFilter, LeadStatus } from '../../../../core/models';
+import { ILead, ILeadFilter } from '../../../../core/models';
+import { ILeadStatus } from '../../../../core/models/lead-status.model';
 import { LayoutComponent } from '../../../../shared/components/layout/layout.component';
 import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit-dialog/lead-edit-dialog.component';
 
 interface PendingStatusChange {
   lead: ILead;
-  previousStatus: LeadStatus;
-  targetStatus: LeadStatus;
+  previousStatus: string;
+  targetStatus: string;
+  targetStatusMasterId: string;
   event: CdkDragDrop<ILead[]>;
 }
 
@@ -93,314 +95,8 @@ interface User {
     LeadEditDialogComponent,
   ],
   providers: [MessageService],
-  styleUrls: ['./lead-kanban.component.scss'],
-  template: `
-    <app-layout>
-      <p-toast />
-      <div class="page-container">
-        <!-- Header -->
-        <div class="page-header">
-          <div>
-            <h1 class="page-title">Leads Pipeline</h1>
-            <p class="page-subtitle">Drag and drop to update lead status</p>
-          </div>
-          <div class="view-toggle">
-            <button
-              pButton
-              icon="pi pi-list"
-              [outlined]="true"
-              size="small"
-              pTooltip="Table View"
-              (click)="switchToTable()"
-            ></button>
-            <button
-              pButton
-              icon="pi pi-th-large"
-              size="small"
-              pTooltip="Kanban View"
-              class="active-view"
-            ></button>
-          </div>
-        </div>
-
-        <!-- Filters -->
-        <div class="filter-card">
-          <!-- Date Quick Filters -->
-          <div class="date-filter-row">
-            <span class="filter-label">Date:</span>
-            @for (option of dateFilterOptions; track option.value) {
-            <button
-              pButton
-              [label]="option.label"
-              [outlined]="selectedDateFilter !== option.value"
-              [severity]="
-                selectedDateFilter === option.value ? 'primary' : 'secondary'
-              "
-              size="small"
-              (click)="onDateFilterSelect(option.value)"
-              class="date-filter-btn"
-            ></button>
-            } @if (selectedDateFilter === 'custom') {
-            <p-datepicker
-              [(ngModel)]="customDateRange"
-              selectionMode="range"
-              [showIcon]="true"
-              placeholder="Select range"
-              dateFormat="dd/mm/yy"
-              (onSelect)="onCustomDateChange()"
-              class="custom-date-picker"
-            />
-            } @if (selectedDateFilter) {
-            <button
-              pButton
-              icon="pi pi-times"
-              [text]="true"
-              [rounded]="true"
-              size="small"
-              severity="danger"
-              pTooltip="Clear date filter"
-              (click)="clearDateFilter()"
-            ></button>
-            }
-          </div>
-
-          <!-- All Filters in Single Row -->
-          <div class="filter-row">
-            <p-inputgroup class="search-group">
-              <p-inputgroup-addon>
-                <i class="pi pi-search"></i>
-              </p-inputgroup-addon>
-              <input
-                type="text"
-                pInputText
-                [(ngModel)]="searchQuery"
-                placeholder="Search leads..."
-                (input)="onFilterChange()"
-              />
-            </p-inputgroup>
-
-            <p-multiselect
-              [options]="categories()"
-              [(ngModel)]="selectedCategoryIds"
-              optionLabel="name"
-              optionValue="id"
-              placeholder="All Categories"
-              [showClear]="true"
-              [filter]="true"
-              filterPlaceholder="Search categories"
-              (onChange)="onFilterChange()"
-              class="filter-multiselect"
-              display="chip"
-              [maxSelectedLabels]="2"
-              selectedItemsLabel="{0} categories"
-            />
-
-            <p-multiselect
-              [options]="users()"
-              [(ngModel)]="selectedUserIds"
-              optionLabel="name"
-              optionValue="id"
-              placeholder="All Users"
-              [showClear]="true"
-              [filter]="true"
-              filterPlaceholder="Search users"
-              (onChange)="onFilterChange()"
-              class="filter-multiselect"
-              display="chip"
-              [maxSelectedLabels]="2"
-              selectedItemsLabel="{0} users"
-            />
-
-            <div class="group-by-section">
-              <span class="filter-label">Group by:</span>
-              <p-select
-                [options]="groupByOptions"
-                [(ngModel)]="selectedGroupBy"
-                optionLabel="label"
-                optionValue="value"
-                (onChange)="onGroupByChange()"
-                class="group-select"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Kanban Board -->
-        <div class="board-container">
-          <div class="kanban-board" cdkDropListGroup>
-            @for (column of dynamicColumns(); track column.id) {
-            <div
-              class="kanban-column"
-              [style.--column-color]="column.color"
-              [style.--column-bg]="column.bgColor"
-            >
-              <div class="column-header">
-                <div class="column-title">
-                  <i class="pi {{ column.icon }}"></i>
-                  <span>{{ column.title }}</span>
-                </div>
-                <span class="column-count">{{ column.count }}</span>
-              </div>
-              <div
-                class="column-content"
-                cdkDropList
-                [cdkDropListData]="column.leads"
-                [id]="column.id"
-                (cdkDropListDropped)="onDrop($event, column.id)"
-              >
-                @for (lead of column.leads; track lead.id) {
-                <div class="lead-card" cdkDrag [cdkDragData]="lead">
-                  <div class="card-header">
-                    <span class="phone-number">
-                      <i class="pi pi-phone"></i>
-                      {{ lead.phoneNumber }}
-                    </span>
-                  </div>
-                  <div class="card-body">
-                    <div class="customer-name">
-                      {{ lead.name || 'Unknown Customer' }}
-                    </div>
-                    @if (lead.category) {
-                    <div class="category-badge">
-                      {{ lead.category.name }}
-                    </div>
-                    }
-                  </div>
-                  <div class="card-footer">
-                    <div class="assigned-user">
-                      <i class="pi pi-user"></i>
-                      {{ lead.assignedTo?.name || 'Unassigned' }}
-                    </div>
-                    <div class="card-actions">
-                      <button
-                        pButton
-                        icon="pi pi-pencil"
-                        [text]="true"
-                        [rounded]="true"
-                        size="small"
-                        pTooltip="Edit Lead"
-                        (click)="openEditDialog(lead); $event.stopPropagation()"
-                      ></button>
-                      <button
-                        pButton
-                        icon="pi pi-comments"
-                        [text]="true"
-                        [rounded]="true"
-                        size="small"
-                        pTooltip="Open Floating Chat"
-                        (click)="openFloatingChat(lead)"
-                      ></button>
-                      <button
-                        pButton
-                        icon="pi pi-external-link"
-                        [text]="true"
-                        [rounded]="true"
-                        size="small"
-                        pTooltip="Float Chat"
-                        (click)="openFloatingChat(lead)"
-                        class="float-chat-btn"
-                      ></button>
-                      <button
-                        pButton
-                        icon="pi pi-eye"
-                        [text]="true"
-                        [rounded]="true"
-                        size="small"
-                        pTooltip="View Details"
-                        [routerLink]="['/leads', lead.id]"
-                      ></button>
-                    </div>
-                  </div>
-                  <div class="card-date">
-                    <i class="pi pi-calendar"></i>
-                    {{ lead.createdAt | date : 'MMM d, y' }}
-                  </div>
-                  <!-- Drag preview -->
-                  <div class="drag-preview" *cdkDragPreview>
-                    <div class="preview-card">
-                      <span class="phone-number">{{ lead.phoneNumber }}</span>
-                      <span class="customer-name">{{
-                        lead.name || 'Unknown'
-                      }}</span>
-                    </div>
-                  </div>
-                </div>
-                } @empty {
-                <div class="empty-column">
-                  <i class="pi pi-inbox"></i>
-                  <span>No leads</span>
-                </div>
-                }
-              </div>
-            </div>
-            }
-          </div>
-
-          @if (loading()) {
-          <div class="loading-overlay">
-            <i class="pi pi-spin pi-spinner"></i>
-            <span>Loading leads...</span>
-          </div>
-          }
-        </div>
-      </div>
-
-      <!-- Edit Dialog -->
-      <app-lead-edit-dialog
-        [lead]="selectedLead()"
-        [(visible)]="editDialogVisible"
-        (leadUpdated)="onLeadUpdated($event)"
-      />
-
-      <!-- Status Change Comment Dialog -->
-      <p-dialog
-        [(visible)]="statusChangeDialogVisible"
-        header="Add Comment"
-        [modal]="true"
-        [style]="{ width: '400px' }"
-        [draggable]="false"
-        [resizable]="false"
-        (onHide)="onStatusChangeCancel()"
-      >
-        <div class="status-change-dialog">
-          @if (pendingStatusChange) {
-          <p class="status-change-info">
-            Moving lead to
-            <strong>{{
-              getStatusTitle(pendingStatusChange.targetStatus)
-            }}</strong>
-          </p>
-          }
-          <div class="comment-field">
-            <label class="field-label">Comment (optional)</label>
-            <textarea
-              pTextarea
-              [(ngModel)]="statusChangeComment"
-              placeholder="Add a comment about this status change..."
-              rows="3"
-              class="w-full"
-            ></textarea>
-          </div>
-        </div>
-        <ng-template pTemplate="footer">
-          <div class="dialog-footer">
-            <button
-              pButton
-              label="Cancel"
-              [text]="true"
-              severity="secondary"
-              (click)="onStatusChangeCancel()"
-            ></button>
-            <button
-              pButton
-              label="Confirm"
-              (click)="onStatusChangeConfirm()"
-            ></button>
-          </div>
-        </ng-template>
-      </p-dialog>
-    </app-layout>
-  `,
+  templateUrl: './lead-kanban.component.html',
+  styleUrl: './lead-kanban.component.scss',
 })
 export class LeadKanbanComponent implements OnInit {
   // State
@@ -850,7 +546,8 @@ export class LeadKanbanComponent implements OnInit {
     this.pendingStatusChange = {
       lead,
       previousStatus,
-      targetStatus: targetStatusMaster.name as LeadStatus,
+      targetStatus: targetStatusMaster.name,
+      targetStatusMasterId: targetStatusMaster.id,
       event,
     };
     this.statusChangeComment = '';
@@ -860,7 +557,7 @@ export class LeadKanbanComponent implements OnInit {
   onStatusChangeConfirm(): void {
     if (!this.pendingStatusChange) return;
 
-    const { lead, previousStatus, targetStatus, event } =
+    const { lead, previousStatus, targetStatus, targetStatusMasterId, event } =
       this.pendingStatusChange;
 
     // Optimistic update - move the card
@@ -877,12 +574,13 @@ export class LeadKanbanComponent implements OnInit {
     // Update column counts
     this.updateColumnCounts();
 
-    // Call API to persist the change with comment
+    // Call API to persist the change with comment - use statusMasterId for dynamic statuses
     this.leadService
       .updateLeadStatus(
         lead.id,
-        targetStatus,
-        this.statusChangeComment || undefined
+        undefined,
+        this.statusChangeComment || undefined,
+        targetStatusMasterId
       )
       .subscribe({
         next: () => {
@@ -932,9 +630,11 @@ export class LeadKanbanComponent implements OnInit {
     this.dynamicColumns.set([...currentColumns]);
   }
 
-  getStatusTitle(status: LeadStatus): string {
-    const config = this.kanbanStateService.getColumnConfig(status);
-    return config?.title || status;
+  getStatusTitle(status: string): string {
+    const statusObj = this.statuses().find(
+      (s) => s.name.toLowerCase() === status?.toLowerCase()
+    );
+    return statusObj?.name || status || '';
   }
 
   switchToTable(): void {

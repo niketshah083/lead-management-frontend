@@ -1,0 +1,635 @@
+// Variables
+$primary-color: #3b82f6;
+$success-color: #10b981;
+$danger-color: #ef4444;
+$warning-color: #f59e0b;
+$info-color: #0ea5e9;
+$text-primary: #1f2937;
+$text-secondary: #6b7280;
+$text-muted: #9ca3af;
+$border-color: #e5e7eb;
+$bg-light: #f9fafb;
+$bg-white: #ffffff;
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+$radius-sm: 6px;
+$radius-md: 8px;
+$radius-lg: 12px;
+
+// Page Container
+.page-container {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: calc(100vh - 60px);
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+}
+
+// Page Header - Updated layout with search in center
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.header-content {
+  flex: 1;
+  min-width: 200px;
+}
+
+.page-title {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: $text-primary;
+
+  @media (max-width: 576px) {
+    font-size: 1.5rem;
+  }
+}
+
+.page-subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  color: $text-secondary;
+}
+
+// Header Search - Center position
+.header-search {
+  flex: 2;
+  display: flex;
+  justify-content: center;
+  max-width: 400px;
+
+  @media (max-width: 768px) {
+    order: 3;
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+.add-btn {
+  white-space: nowrap;
+
+  @media (max-width: 768px) {
+    order: 2;
+    width: auto;
+  }
+
+  @media (max-width: 576px) {
+    width: 100%;
+  }
+}
+
+// Connector Type Cards
+.connector-types-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.connector-type-card {
+  background: $bg-white;
+  border-radius: $radius-lg;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: $shadow-md;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    border-color: $primary-color;
+  }
+
+  &.has-connector {
+    border-color: $success-color;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  }
+}
+
+.type-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: $radius-lg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  i {
+    font-size: 1.5rem;
+    color: white;
+  }
+
+  &[data-type='webhook'] {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  }
+  &[data-type='meta'] {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  }
+  &[data-type='google'] {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  }
+  &[data-type='youtube'] {
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  }
+  &[data-type='linkedin'] {
+    background: linear-gradient(135deg, #0077b5 0%, #005885 100%);
+  }
+  &[data-type='whatsapp'] {
+    background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+  }
+  &[data-type='indiamart'] {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+  }
+  &[data-type='tradeindia'] {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  }
+}
+
+.type-info {
+  flex: 1;
+
+  h3 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.75rem;
+    color: $text-secondary;
+    line-height: 1.4;
+  }
+}
+
+.type-status {
+  flex-shrink: 0;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 500;
+
+  &.connected {
+    background: rgba($success-color, 0.1);
+    color: $success-color;
+  }
+
+  &.not-connected {
+    background: $bg-light;
+    color: $text-secondary;
+  }
+}
+
+.loading-types {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: $text-secondary;
+
+  i {
+    font-size: 1.25rem;
+    color: $primary-color;
+  }
+}
+
+// Section Header
+.section-header {
+  margin: 2rem 0 1rem 0;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: $text-primary;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  i {
+    color: $primary-color;
+  }
+}
+
+// Table Card
+.table-card {
+  background: $bg-white;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-md;
+  overflow: hidden;
+}
+
+.table-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.5rem 0;
+
+  @media (max-width: 576px) {
+    justify-content: stretch;
+  }
+}
+
+// Modern Search Input
+.search-wrapper {
+  position: relative;
+  width: 100%;
+
+  @media (max-width: 576px) {
+    width: 100%;
+  }
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: $text-muted;
+  font-size: 0.9rem;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.75rem !important;
+  border: 2px solid $border-color !important;
+  border-radius: 12px !important;
+  font-size: 0.9rem;
+  background: $bg-light;
+  transition: all 0.2s ease;
+
+  &::placeholder {
+    color: $text-muted;
+  }
+
+  &:hover {
+    border-color: darken($border-color, 10%) !important;
+    background: $bg-white;
+  }
+
+  &:focus {
+    border-color: $primary-color !important;
+    background: $bg-white;
+    box-shadow: 0 0 0 4px rgba($primary-color, 0.1) !important;
+    outline: none;
+  }
+}
+
+// Table Columns
+.type-col {
+  width: 120px;
+}
+
+.status-col {
+  width: 140px;
+}
+
+.sync-col {
+  width: 140px;
+}
+
+.actions-col {
+  width: 140px;
+  text-align: center;
+}
+
+// Connector Name
+.connector-name {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.connector-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: $radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  i {
+    font-size: 1.25rem;
+    color: white;
+  }
+
+  &[data-type='webhook'] {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  }
+  &[data-type='meta'] {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  }
+  &[data-type='google'] {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  }
+  &[data-type='youtube'] {
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  }
+  &[data-type='linkedin'] {
+    background: linear-gradient(135deg, #0077b5 0%, #005885 100%);
+  }
+  &[data-type='whatsapp'] {
+    background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+  }
+  &[data-type='indiamart'] {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+  }
+  &[data-type='tradeindia'] {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  }
+}
+
+.connector-details {
+  display: flex;
+  flex-direction: column;
+
+  .name {
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  .description {
+    font-size: 0.75rem;
+    color: $text-secondary;
+  }
+}
+
+// Status Indicator
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  &.connected {
+    background: rgba($success-color, 0.1);
+    color: $success-color;
+  }
+
+  &.error {
+    background: rgba($danger-color, 0.1);
+    color: $danger-color;
+  }
+
+  &.disconnected {
+    background: $bg-light;
+    color: $text-secondary;
+  }
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.last-sync {
+  font-size: 0.875rem;
+  color: $text-secondary;
+}
+
+.no-sync {
+  font-size: 0.875rem;
+  color: $text-muted;
+  font-style: italic;
+}
+
+// Action Buttons
+.action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.config-btn {
+  color: $text-secondary !important;
+
+  &:hover {
+    background: rgba($text-secondary, 0.1) !important;
+  }
+}
+
+.test-btn {
+  color: $info-color !important;
+
+  &:hover {
+    background: rgba($info-color, 0.1) !important;
+  }
+}
+
+.delete-btn {
+  color: $danger-color !important;
+
+  &:hover {
+    background: rgba($danger-color, 0.1) !important;
+  }
+}
+
+// Empty State
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+
+  i {
+    font-size: 3rem;
+    color: $text-muted;
+    margin-bottom: 1rem;
+  }
+
+  h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  p {
+    margin: 0 0 1.5rem 0;
+    color: $text-secondary;
+  }
+}
+
+// Dialog Styles
+:host ::ng-deep .connector-dialog {
+  .p-dialog-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid $border-color;
+  }
+
+  .p-dialog-content {
+    padding: 1.5rem;
+  }
+
+  .p-dialog-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid $border-color;
+  }
+}
+
+.dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  label {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: $text-primary;
+  }
+
+  .required {
+    color: $danger-color;
+  }
+}
+
+.type-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.cancel-btn {
+  color: $text-secondary !important;
+}
+
+.save-btn {
+  min-width: 100px;
+}
+
+// PrimeNG Overrides
+:host ::ng-deep {
+  .p-datatable {
+    .p-datatable-header {
+      background: transparent;
+      border: none;
+      padding: 1rem 1.5rem;
+    }
+
+    .p-datatable-thead > tr > th {
+      background: $bg-light;
+      color: $text-secondary;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.875rem 1rem;
+      border: none;
+      border-bottom: 1px solid $border-color;
+    }
+
+    .p-datatable-tbody > tr > td {
+      padding: 1rem;
+      border: none;
+      border-bottom: 1px solid $border-color;
+    }
+
+    .p-datatable-tbody > tr:last-child > td {
+      border-bottom: none;
+    }
+
+    .p-datatable-tbody > tr:hover {
+      background: $bg-light;
+    }
+
+    .p-paginator {
+      padding: 1rem;
+      border: none;
+      border-top: 1px solid $border-color;
+    }
+  }
+
+  .p-inputtext,
+  .p-select {
+    border-radius: $radius-md;
+    border-color: $border-color;
+
+    &:focus {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 2px rgba($primary-color, 0.1);
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .connector-types-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sync-col {
+    display: none;
+  }
+
+  :host ::ng-deep .p-datatable {
+    .p-datatable-thead > tr > th,
+    .p-datatable-tbody > tr > td {
+      padding: 0.75rem;
+    }
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+}

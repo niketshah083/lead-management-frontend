@@ -17,13 +17,10 @@ import {
   LeadService,
   AuthService,
   FloatingChatService,
+  LeadStatusService,
 } from '../../../../core/services';
-import {
-  ILead,
-  ILeadHistory,
-  ILeadContact,
-  LeadStatus,
-} from '../../../../core/models';
+import { ILead, ILeadHistory, ILeadContact } from '../../../../core/models';
+import { ILeadStatus } from '../../../../core/models/lead-status.model';
 import { LayoutComponent } from '../../../../shared/components/layout/layout.component';
 import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit-dialog/lead-edit-dialog.component';
 
@@ -731,6 +728,7 @@ import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit
       .header-actions {
         display: flex;
         gap: 0.75rem;
+        flex-wrap: wrap;
       }
       .chat-btn {
         background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
@@ -743,6 +741,22 @@ import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit
       }
       .float-chat-btn:hover {
         background: rgba(37, 211, 102, 0.2) !important;
+      }
+      @media (max-width: 768px) {
+        .page-header {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .header-actions {
+          justify-content: stretch;
+        }
+        .header-actions button {
+          flex: 1;
+          min-width: 0;
+        }
+        .float-chat-btn {
+          display: none;
+        }
       }
       .loading-state,
       .not-found {
@@ -1320,9 +1334,10 @@ export class LeadDetailComponent implements OnInit {
   lead = signal<ILead | null>(null);
   history = signal<ILeadHistory[]>([]);
   contacts = signal<ILeadContact[]>([]);
+  statuses = signal<ILeadStatus[]>([]);
   loading = signal(true);
   historyLoading = signal(false);
-  newStatus: LeadStatus | null = null;
+  newStatus: string | null = null;
   editDialogVisible = false;
   statusChangeDialogVisible = false;
   statusChangeComment = '';
@@ -1383,26 +1398,41 @@ export class LeadDetailComponent implements OnInit {
   ];
   filteredDesignations: string[] = [];
 
-  statusOptions = Object.values(LeadStatus).map((s) => ({
-    label: s.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
-    value: s,
-  }));
+  statusOptions: { label: string; value: string }[] = [];
 
   constructor(
     private route: ActivatedRoute,
     private leadService: LeadService,
     public authService: AuthService,
     private messageService: MessageService,
-    private floatingChatService: FloatingChatService
+    private floatingChatService: FloatingChatService,
+    private leadStatusService: LeadStatusService
   ) {}
 
   ngOnInit(): void {
+    this.loadStatuses();
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.loadLead(id);
       this.loadHistory(id);
       this.loadCategoriesAndUsers();
     }
+  }
+
+  loadStatuses(): void {
+    this.leadStatusService.getAll().subscribe({
+      next: (response) => {
+        this.statuses.set(response.data);
+        this.statusOptions = response.data
+          .filter((s) => s.isActive)
+          .sort((a, b) => a.order - b.order)
+          .map((s) => ({
+            label: s.name,
+            value: s.name,
+          }));
+      },
+      error: () => console.warn('Failed to load statuses'),
+    });
   }
 
   loadLead(id: string): void {
@@ -1784,25 +1814,24 @@ export class LeadDetailComponent implements OnInit {
     );
   }
 
-  getStatusLabel(status: LeadStatus): string {
-    return status.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+  getStatusLabel(status: string): string {
+    return (
+      status?.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase()) || ''
+    );
   }
 
   getStatusSeverity(
-    status: LeadStatus
+    status: string | undefined
   ): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
-    const map: Record<
-      LeadStatus,
-      'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast'
-    > = {
-      [LeadStatus.NEW]: 'info',
-      [LeadStatus.CONTACTED]: 'warn',
-      [LeadStatus.QUALIFIED]: 'contrast',
-      [LeadStatus.NEGOTIATION]: 'warn',
-      [LeadStatus.WON]: 'success',
-      [LeadStatus.LOST]: 'danger',
-    };
-    return map[status] || 'info';
+    if (!status) return 'info';
+    // Fallback for common statuses
+    const lowerStatus = status.toLowerCase();
+    if (lowerStatus === 'won') return 'success';
+    if (lowerStatus === 'lost') return 'danger';
+    if (lowerStatus === 'contacted' || lowerStatus === 'negotiation')
+      return 'warn';
+    if (lowerStatus === 'qualified') return 'contrast';
+    return 'info';
   }
 
   getEventTitle(event: ILeadHistory): string {

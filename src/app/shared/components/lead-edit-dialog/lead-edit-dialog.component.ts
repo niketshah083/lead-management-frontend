@@ -6,8 +6,13 @@ import { SelectModule } from 'primeng/select';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
-import { LeadService, AuthService } from '../../../core/services';
-import { ILead, LeadStatus } from '../../../core/models';
+import {
+  LeadService,
+  AuthService,
+  LeadStatusService,
+} from '../../../core/services';
+import { ILead } from '../../../core/models';
+import { ILeadStatus } from '../../../core/models/lead-status.model';
 
 interface Category {
   id: string;
@@ -151,24 +156,24 @@ export class LeadEditDialogComponent {
 
   categories = signal<Category[]>([]);
   users = signal<User[]>([]);
+  statuses = signal<ILeadStatus[]>([]);
   saving = signal(false);
 
-  selectedStatus: LeadStatus | null = null;
+  selectedStatus: string | null = null;
   selectedCategoryId: string | null = null;
   selectedUserId: string | null = null;
 
-  statusOptions = Object.values(LeadStatus).map((s) => ({
-    label: s.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
-    value: s,
-  }));
+  statusOptions: Array<{ label: string; value: string }> = [];
 
   constructor(
     private leadService: LeadService,
     public authService: AuthService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private leadStatusService: LeadStatusService
   ) {
     this.loadCategories();
     this.loadUsers();
+    this.loadStatuses();
   }
 
   ngOnChanges(): void {
@@ -190,6 +195,22 @@ export class LeadEditDialogComponent {
     this.leadService.getUsers().subscribe({
       next: (users) => this.users.set(users),
       error: () => console.warn('Failed to load users'),
+    });
+  }
+
+  loadStatuses(): void {
+    this.leadStatusService.getAll().subscribe({
+      next: (response) => {
+        this.statuses.set(response.data);
+        this.statusOptions = response.data
+          .filter((s) => s.isActive)
+          .sort((a, b) => a.order - b.order)
+          .map((s) => ({
+            label: s.name,
+            value: s.name,
+          }));
+      },
+      error: () => console.warn('Failed to load statuses'),
     });
   }
 

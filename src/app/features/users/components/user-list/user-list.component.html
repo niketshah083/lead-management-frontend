@@ -1,0 +1,184 @@
+<app-layout>
+  <p-toast />
+  <p-confirmDialog />
+
+  <div class="page-container">
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1 class="page-title">Users</h1>
+        <p class="page-subtitle">Manage team members and their roles</p>
+      </div>
+
+      <!-- Search in header -->
+      <div class="header-search">
+        <div class="search-wrapper">
+          <i class="pi pi-search search-icon"></i>
+          <input
+            pInputText
+            type="text"
+            placeholder="Search users..."
+            class="search-input"
+            (input)="onSearch($event)"
+          />
+        </div>
+      </div>
+
+      @if (authService.isAdmin()) {
+      <button
+        pButton
+        label="Add User"
+        icon="pi pi-plus"
+        routerLink="/users/create"
+        class="add-btn"
+      ></button>
+      }
+    </div>
+
+    <!-- Data Table Card -->
+    <div class="table-card">
+      <p-table
+        #dt
+        [value]="users()"
+        [loading]="loading()"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[5, 10, 25, 50]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} users"
+        [globalFilterFields]="['name', 'email', 'role']"
+        styleClass="p-datatable-striped"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="name">
+              User <p-sortIcon field="name"></p-sortIcon>
+            </th>
+            <th class="email-col">Email</th>
+            <th pSortableColumn="role" class="role-col">
+              Role <p-sortIcon field="role"></p-sortIcon>
+            </th>
+            <th class="manager-col">Manager</th>
+            <th class="categories-col">Categories</th>
+            <th pSortableColumn="isActive" class="status-col">
+              Status <p-sortIcon field="isActive"></p-sortIcon>
+            </th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-user>
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div
+                  class="user-avatar"
+                  [ngStyle]="{ background: getAvatarColor(user.role) }"
+                >
+                  {{ getInitials(user.name) }}
+                </div>
+                <div class="user-info">
+                  <span class="user-name">{{ user.name }}</span>
+                  <span class="user-email-mobile">{{ user.email }}</span>
+                </div>
+              </div>
+            </td>
+            <td class="email-col">
+              <span class="email-text">{{ user.email }}</span>
+            </td>
+            <td class="role-col">
+              <span class="role-badge" [ngClass]="getRoleClass(user.role)">
+                {{ formatRole(user.role) }}
+              </span>
+            </td>
+            <td class="manager-col">
+              <span class="manager-text">{{ user.manager?.name || "-" }}</span>
+            </td>
+            <td class="categories-col">
+              <div class="categories-cell">
+                @if (user.categories && user.categories.length > 0) { @for (cat
+                of user.categories.slice(0, 2); track cat.id) {
+                <span class="category-tag">{{ cat.name }}</span>
+                } @if (user.categories.length > 2) {
+                <span
+                  class="category-more"
+                  [pTooltip]="getCategoryTooltip(user)"
+                  tooltipPosition="top"
+                >
+                  +{{ user.categories.length - 2 }}
+                </span>
+                } } @else {
+                <span class="no-categories">-</span>
+                }
+              </div>
+            </td>
+            <td class="status-col">
+              <span
+                class="status-badge"
+                [class.active]="user.isActive"
+                [class.inactive]="!user.isActive"
+              >
+                <i
+                  [class]="
+                    user.isActive ? 'pi pi-check-circle' : 'pi pi-times-circle'
+                  "
+                ></i>
+                <span class="status-text">{{
+                  user.isActive ? "Active" : "Inactive"
+                }}</span>
+              </span>
+            </td>
+            <td class="actions-col">
+              <div class="action-buttons">
+                @if (authService.isAdmin()) {
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  [text]="true"
+                  [rounded]="true"
+                  class="edit-btn"
+                  pTooltip="Edit"
+                  tooltipPosition="top"
+                  [routerLink]="['/users', user.id, 'edit']"
+                ></button>
+                @if (user.isActive) {
+                <button
+                  pButton
+                  icon="pi pi-ban"
+                  [text]="true"
+                  [rounded]="true"
+                  severity="danger"
+                  class="delete-btn"
+                  pTooltip="Deactivate"
+                  tooltipPosition="top"
+                  (click)="confirmDeactivate(user)"
+                ></button>
+                } }
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <i class="pi pi-users"></i>
+                <h3>No users found</h3>
+                <p>Add your first team member to get started</p>
+                @if (authService.isAdmin()) {
+                <button
+                  pButton
+                  label="Add User"
+                  icon="pi pi-plus"
+                  routerLink="/users/create"
+                ></button>
+                }
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+</app-layout>

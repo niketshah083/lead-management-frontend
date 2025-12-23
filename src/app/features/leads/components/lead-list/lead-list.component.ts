@@ -19,14 +19,12 @@ import {
   KanbanStateService,
   ApiService,
   FloatingChatService,
+  LeadStatusService,
+  UserService,
 } from '../../../../core/services';
 import { CategoryService } from '../../../category/services/category.service';
-import {
-  ILead,
-  ILeadFilter,
-  LeadStatus,
-  ICategory,
-} from '../../../../core/models';
+import { ILead, ILeadFilter, ICategory } from '../../../../core/models';
+import { ILeadStatus } from '../../../../core/models/lead-status.model';
 import { LayoutComponent } from '../../../../shared/components/layout/layout.component';
 import { LeadKanbanComponent } from '../lead-kanban/lead-kanban.component';
 import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit-dialog/lead-edit-dialog.component';
@@ -116,32 +114,95 @@ import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit
           </div>
         </div>
 
-        <!-- Filters -->
+        <!-- Modern Filters -->
         <div class="filter-card">
-          <div class="filter-row">
+          <div class="filter-grid">
+            <!-- Search Input -->
+            <div class="filter-item search-item">
+              <label class="filter-label">Search</label>
+              <div class="search-wrapper">
+                <i class="pi pi-search search-icon"></i>
+                <input
+                  pInputText
+                  type="text"
+                  [(ngModel)]="searchQuery"
+                  placeholder="Search by name, phone, email..."
+                  class="search-input"
+                  (input)="onSearchChange()"
+                />
+                @if (searchQuery) {
+                <i class="pi pi-times clear-search" (click)="clearSearch()"></i>
+                }
+              </div>
+            </div>
+
+            <!-- Status Filter -->
             <div class="filter-item">
-              <label class="filter-label">Filter by Status</label>
+              <label class="filter-label">Status</label>
               <p-select
                 [options]="statusOptions"
                 [(ngModel)]="selectedStatus"
                 placeholder="All Statuses"
                 [showClear]="true"
                 (onChange)="loadLeads()"
-                styleClass="filter-select"
+                styleClass="filter-dropdown"
               />
             </div>
+
+            <!-- Category Filter -->
             <div class="filter-item">
-              <button
-                pButton
-                [label]="
-                  showUnassignedOnly ? 'Showing Unassigned' : 'Show Unassigned'
-                "
-                [severity]="showUnassignedOnly ? 'success' : 'secondary'"
-                size="small"
-                (click)="showUnassignedOnly = !showUnassignedOnly; loadLeads()"
-                pTooltip="Filter to show only unassigned leads"
-              ></button>
+              <label class="filter-label">Category</label>
+              <p-select
+                [options]="categoryOptions"
+                [(ngModel)]="selectedCategory"
+                placeholder="All Categories"
+                [showClear]="true"
+                (onChange)="loadLeads()"
+                styleClass="filter-dropdown"
+              />
             </div>
+
+            <!-- Assigned To Filter -->
+            <div class="filter-item">
+              <label class="filter-label">Assigned To</label>
+              <p-select
+                [options]="userOptions"
+                [(ngModel)]="selectedAssignee"
+                placeholder="All Users"
+                [showClear]="true"
+                (onChange)="loadLeads()"
+                styleClass="filter-dropdown"
+              />
+            </div>
+          </div>
+
+          <!-- Filter Actions Row -->
+          <div class="filter-actions">
+            <div class="filter-toggles">
+              <div
+                class="toggle-chip"
+                [class.active]="showUnassignedOnly"
+                (click)="toggleUnassigned()"
+              >
+                <i
+                  class="pi"
+                  [class.pi-check]="showUnassignedOnly"
+                  [class.pi-user-minus]="!showUnassignedOnly"
+                ></i>
+                <span>Unassigned Only</span>
+              </div>
+            </div>
+            @if (hasActiveFilters()) {
+            <button
+              pButton
+              label="Clear All Filters"
+              icon="pi pi-filter-slash"
+              [text]="true"
+              size="small"
+              class="clear-filters-btn"
+              (click)="clearAllFilters()"
+            ></button>
+            }
           </div>
         </div>
 
@@ -528,32 +589,175 @@ import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit
       .filter-card {
         background: white;
         border-radius: 16px;
-        padding: 1.5rem;
+        padding: 1.25rem 1.5rem;
         margin-bottom: 1.5rem;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e5e7eb;
       }
 
-      .filter-row {
-        display: flex;
+      .filter-grid {
+        display: grid;
+        grid-template-columns: 1.5fr repeat(3, 1fr);
         gap: 1rem;
-        flex-wrap: wrap;
+        align-items: end;
       }
 
       .filter-item {
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
-        min-width: 200px;
       }
 
       .filter-label {
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: #374151;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
       }
 
-      :host ::ng-deep .filter-select {
+      /* Modern Search Input */
+      .search-item {
+        grid-column: span 1;
+      }
+
+      .search-wrapper {
+        position: relative;
         width: 100%;
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        font-size: 0.9rem;
+        z-index: 1;
+        pointer-events: none;
+      }
+
+      .search-input {
+        width: 100%;
+        padding: 0.75rem 2.5rem 0.75rem 2.75rem !important;
+        border: 2px solid #e5e7eb !important;
+        border-radius: 10px !important;
+        font-size: 0.875rem;
+        background: #f9fafb;
+        transition: all 0.2s ease;
+      }
+
+      .search-input::placeholder {
+        color: #9ca3af;
+      }
+
+      .search-input:hover {
+        border-color: #d1d5db !important;
+        background: white;
+      }
+
+      .search-input:focus {
+        border-color: #3b82f6 !important;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+        outline: none;
+      }
+
+      .clear-search {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        font-size: 0.8rem;
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 50%;
+        transition: all 0.2s;
+      }
+
+      .clear-search:hover {
+        color: #ef4444;
+        background: rgba(239, 68, 68, 0.1);
+      }
+
+      /* Filter Dropdowns */
+      :host ::ng-deep .filter-dropdown {
+        width: 100%;
+        border-radius: 10px !important;
+
+        .p-select {
+          border: 2px solid #e5e7eb;
+          border-radius: 10px;
+          background: #f9fafb;
+          transition: all 0.2s ease;
+
+          &:hover {
+            border-color: #d1d5db;
+            background: white;
+          }
+
+          &.p-focus {
+            border-color: #3b82f6;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          }
+        }
+      }
+
+      /* Filter Actions */
+      .filter-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #f1f5f9;
+      }
+
+      .filter-toggles {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      .toggle-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: #f1f5f9;
+        border: 2px solid transparent;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .toggle-chip:hover {
+        background: #e2e8f0;
+        color: #475569;
+      }
+
+      .toggle-chip.active {
+        background: rgba(16, 185, 129, 0.1);
+        border-color: #10b981;
+        color: #059669;
+      }
+
+      .toggle-chip.active i {
+        color: #10b981;
+      }
+
+      .clear-filters-btn {
+        color: #ef4444 !important;
+        font-size: 0.8rem;
+      }
+
+      .clear-filters-btn:hover {
+        background: rgba(239, 68, 68, 0.1) !important;
       }
 
       .table-card {
@@ -689,11 +893,27 @@ import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit
           width: 100%;
         }
 
+        .filter-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .filter-actions {
+          flex-direction: column;
+          gap: 1rem;
+          align-items: flex-start;
+        }
+
         :host ::ng-deep .modern-table {
           .p-datatable-thead > tr > th,
           .p-datatable-tbody > tr > td {
             padding: 0.75rem 1rem;
           }
+        }
+      }
+
+      @media (max-width: 1024px) and (min-width: 769px) {
+        .filter-grid {
+          grid-template-columns: repeat(2, 1fr);
         }
       }
 
@@ -831,7 +1051,10 @@ export class LeadListComponent implements OnInit {
   leads = signal<ILead[]>([]);
   loading = signal(false);
   currentView = signal<'table' | 'kanban'>('table');
-  selectedStatus: LeadStatus | null = null;
+  selectedStatus: string | null = null;
+  selectedCategory: string | null = null;
+  selectedAssignee: string | null = null;
+  searchQuery = '';
   showUnassignedOnly = false;
 
   // Edit dialog
@@ -869,10 +1092,12 @@ export class LeadListComponent implements OnInit {
   categories = signal<ICategory[]>([]);
   categoryOptions: Array<{ label: string; value: string }> = [];
 
-  statusOptions = Object.values(LeadStatus).map((s) => ({
-    label: s.replace('_', ' '),
-    value: s,
-  }));
+  // Dynamic statuses from database
+  statuses = signal<ILeadStatus[]>([]);
+  statusOptions: Array<{ label: string; value: string }> = [];
+
+  // Users for filter
+  userOptions: Array<{ label: string; value: string }> = [];
 
   constructor(
     private leadService: LeadService,
@@ -883,18 +1108,26 @@ export class LeadListComponent implements OnInit {
     private router: Router,
     private categoryService: CategoryService,
     private apiService: ApiService,
-    private floatingChatService: FloatingChatService
+    private floatingChatService: FloatingChatService,
+    private leadStatusService: LeadStatusService,
+    private userService: UserService
   ) {}
 
   ngOnInit(): void {
     // Load categories for manual upload
     this.loadCategories();
+    // Load dynamic statuses
+    this.loadStatuses();
+    // Load users for filter
+    this.loadUsers();
 
     // Check for view preference from local storage or query params
     const savedPref = this.kanbanStateService.getViewPreference();
 
     // Check query params first
     this.route.queryParams.subscribe((params) => {
+      const previousView = this.currentView();
+
       if (params['view'] === 'kanban') {
         this.currentView.set('kanban');
       } else if (params['view'] === 'table') {
@@ -902,11 +1135,12 @@ export class LeadListComponent implements OnInit {
       } else {
         this.currentView.set(savedPref.view);
       }
-    });
 
-    if (this.currentView() === 'table') {
-      this.loadLeads();
-    }
+      // Load leads when switching to table view or when initially loading table view
+      if (this.currentView() === 'table') {
+        this.loadLeads();
+      }
+    });
   }
 
   switchToKanban(): void {
@@ -933,6 +1167,15 @@ export class LeadListComponent implements OnInit {
     const filters: ILeadFilter = {};
     if (this.selectedStatus) {
       filters.status = [this.selectedStatus];
+    }
+    if (this.selectedCategory) {
+      filters.categoryId = this.selectedCategory;
+    }
+    if (this.selectedAssignee) {
+      filters.assignedToId = this.selectedAssignee;
+    }
+    if (this.searchQuery?.trim()) {
+      filters.search = this.searchQuery.trim();
     }
     if (this.showUnassignedOnly) {
       filters.unassignedOnly = true;
@@ -975,20 +1218,105 @@ export class LeadListComponent implements OnInit {
   }
 
   getStatusSeverity(
-    status: LeadStatus
+    status: string
   ): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
-    const severityMap: Record<
-      LeadStatus,
-      'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast'
-    > = {
-      [LeadStatus.NEW]: 'info',
-      [LeadStatus.CONTACTED]: 'warn',
-      [LeadStatus.QUALIFIED]: 'contrast',
-      [LeadStatus.NEGOTIATION]: 'warn',
-      [LeadStatus.WON]: 'success',
-      [LeadStatus.LOST]: 'danger',
-    };
-    return severityMap[status] || 'info';
+    // Find the status in dynamic statuses
+    const statusObj = this.statuses().find(
+      (s) => s.name.toLowerCase() === status?.toLowerCase()
+    );
+    if (statusObj) {
+      // Map statusType to severity
+      switch (statusObj.statusType) {
+        case 'positive':
+          return 'success';
+        case 'negative':
+          return 'danger';
+        default:
+          // Use color-based mapping as fallback
+          if (statusObj.color?.includes('10B981')) return 'success';
+          if (statusObj.color?.includes('EF4444')) return 'danger';
+          if (statusObj.color?.includes('F59E0B')) return 'warn';
+          return 'info';
+      }
+    }
+    // Fallback for legacy statuses
+    const lowerStatus = status?.toLowerCase();
+    if (lowerStatus === 'won') return 'success';
+    if (lowerStatus === 'lost') return 'danger';
+    if (lowerStatus === 'contacted' || lowerStatus === 'negotiation')
+      return 'warn';
+    if (lowerStatus === 'qualified') return 'contrast';
+    return 'info';
+  }
+
+  loadStatuses(): void {
+    this.leadStatusService.getAll().subscribe({
+      next: (response) => {
+        this.statuses.set(response.data);
+        this.statusOptions = response.data
+          .filter((s) => s.isActive)
+          .sort((a, b) => a.order - b.order)
+          .map((s) => ({
+            label: s.name,
+            value: s.name,
+          }));
+      },
+      error: () => {
+        console.warn('Failed to load statuses');
+      },
+    });
+  }
+
+  loadUsers(): void {
+    this.userService.getUsers().subscribe({
+      next: (response: { data: Array<{ id: string; name: string }> }) => {
+        this.userOptions = response.data.map((user) => ({
+          label: user.name,
+          value: user.id,
+        }));
+      },
+      error: () => {
+        console.warn('Failed to load users');
+      },
+    });
+  }
+
+  // Search and filter helpers
+  onSearchChange(): void {
+    // Debounce search - load after user stops typing
+    clearTimeout((this as any).searchTimeout);
+    (this as any).searchTimeout = setTimeout(() => {
+      this.loadLeads();
+    }, 300);
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
+    this.loadLeads();
+  }
+
+  toggleUnassigned(): void {
+    this.showUnassignedOnly = !this.showUnassignedOnly;
+    this.loadLeads();
+  }
+
+  hasActiveFilters(): boolean {
+    return !!(
+      this.selectedStatus ||
+      this.selectedCategory ||
+      this.selectedAssignee ||
+      this.searchQuery ||
+      this.showUnassignedOnly
+    );
+  }
+
+  clearAllFilters(): void {
+    this.selectedStatus = null;
+    this.selectedCategory = null;
+    this.selectedAssignee = null;
+    this.searchQuery = '';
+    this.showUnassignedOnly = false;
+    this.loadLeads();
   }
 
   openEditDialog(lead: ILead): void {

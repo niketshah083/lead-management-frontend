@@ -1,0 +1,466 @@
+// Variables
+$primary-color: #3b82f6;
+$success-color: #10b981;
+$danger-color: #ef4444;
+$warning-color: #f59e0b;
+$info-color: #0ea5e9;
+$text-primary: #1f2937;
+$text-secondary: #6b7280;
+$text-muted: #9ca3af;
+$border-color: #e5e7eb;
+$bg-light: #f9fafb;
+$bg-white: #ffffff;
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+$radius-sm: 6px;
+$radius-md: 8px;
+$radius-lg: 12px;
+
+// Page Container
+.page-container {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: calc(100vh - 60px);
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+}
+
+// Page Header - Updated layout with search in center
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.header-content {
+  flex: 1;
+  min-width: 200px;
+}
+
+.page-title {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: $text-primary;
+
+  @media (max-width: 576px) {
+    font-size: 1.5rem;
+  }
+}
+
+.page-subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  color: $text-secondary;
+}
+
+// Header Search - Center position
+.header-search {
+  flex: 2;
+  display: flex;
+  justify-content: center;
+  max-width: 400px;
+
+  @media (max-width: 768px) {
+    order: 3;
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+.add-btn {
+  white-space: nowrap;
+
+  @media (max-width: 768px) {
+    order: 2;
+    width: auto;
+  }
+
+  @media (max-width: 576px) {
+    width: 100%;
+  }
+}
+
+// Table Card
+.table-card {
+  background: $bg-white;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-md;
+  overflow: hidden;
+}
+
+.table-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.5rem 0;
+
+  @media (max-width: 576px) {
+    justify-content: stretch;
+  }
+}
+
+// Modern Search Input
+.search-wrapper {
+  position: relative;
+  width: 320px;
+
+  @media (max-width: 576px) {
+    width: 100%;
+  }
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: $text-muted;
+  font-size: 0.9rem;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.75rem !important;
+  border: 2px solid $border-color !important;
+  border-radius: 12px !important;
+  font-size: 0.9rem;
+  background: $bg-light;
+  transition: all 0.2s ease;
+
+  &::placeholder {
+    color: $text-muted;
+  }
+
+  &:hover {
+    border-color: darken($border-color, 10%) !important;
+    background: $bg-white;
+  }
+
+  &:focus {
+    border-color: $primary-color !important;
+    background: $bg-white;
+    box-shadow: 0 0 0 4px rgba($primary-color, 0.1) !important;
+    outline: none;
+  }
+}
+
+// Table Columns
+.email-col {
+  max-width: 200px;
+}
+
+.role-col {
+  width: 140px;
+}
+
+.manager-col {
+  width: 140px;
+}
+
+.categories-col {
+  max-width: 180px;
+}
+
+.status-col {
+  width: 120px;
+}
+
+.actions-col {
+  width: 100px;
+  text-align: center;
+}
+
+// User Cell
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.user-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: $radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.user-name {
+  font-weight: 600;
+  color: $text-primary;
+  font-size: 0.9375rem;
+}
+
+.user-email-mobile {
+  display: none;
+  font-size: 0.75rem;
+  color: $text-secondary;
+}
+
+.email-text {
+  color: $text-secondary;
+  font-size: 0.875rem;
+}
+
+// Role Badge
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border-radius: $radius-sm;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+
+  &.admin {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    color: #dc2626;
+  }
+
+  &.manager {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    color: #d97706;
+  }
+
+  &.customer_executive {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    color: #2563eb;
+  }
+}
+
+.manager-text {
+  color: $text-secondary;
+  font-size: 0.875rem;
+}
+
+// Categories
+.categories-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.category-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  color: #0369a1;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.category-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  background: $bg-light;
+  color: $text-secondary;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.no-categories {
+  color: $text-muted;
+  font-size: 0.875rem;
+}
+
+// Status Badge
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  &.active {
+    background: rgba($success-color, 0.1);
+    color: $success-color;
+  }
+
+  &.inactive {
+    background: rgba($danger-color, 0.1);
+    color: $danger-color;
+  }
+
+  i {
+    font-size: 0.875rem;
+  }
+}
+
+// Action Buttons
+.action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.edit-btn {
+  color: $primary-color !important;
+
+  &:hover {
+    background: rgba($primary-color, 0.1) !important;
+  }
+}
+
+.delete-btn {
+  color: $danger-color !important;
+
+  &:hover {
+    background: rgba($danger-color, 0.1) !important;
+  }
+}
+
+// Empty State
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+
+  i {
+    font-size: 3rem;
+    color: $text-muted;
+    margin-bottom: 1rem;
+  }
+
+  h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  p {
+    margin: 0 0 1.5rem 0;
+    color: $text-secondary;
+  }
+}
+
+// PrimeNG Overrides
+:host ::ng-deep {
+  .p-datatable {
+    .p-datatable-header {
+      background: transparent;
+      border: none;
+      padding: 1rem 1.5rem;
+    }
+
+    .p-datatable-thead > tr > th {
+      background: $bg-light;
+      color: $text-secondary;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.875rem 1rem;
+      border: none;
+      border-bottom: 1px solid $border-color;
+    }
+
+    .p-datatable-tbody > tr > td {
+      padding: 1rem;
+      border: none;
+      border-bottom: 1px solid $border-color;
+      vertical-align: middle;
+    }
+
+    .p-datatable-tbody > tr:last-child > td {
+      border-bottom: none;
+    }
+
+    .p-datatable-tbody > tr:hover {
+      background: $bg-light;
+    }
+
+    .p-paginator {
+      padding: 1rem;
+      border: none;
+      border-top: 1px solid $border-color;
+    }
+  }
+
+  .p-inputtext {
+    border-radius: $radius-md;
+    border-color: $border-color;
+
+    &:focus {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 2px rgba($primary-color, 0.1);
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .email-col,
+  .manager-col,
+  .categories-col {
+    display: none;
+  }
+
+  .user-email-mobile {
+    display: block;
+  }
+
+  :host ::ng-deep .p-datatable {
+    .p-datatable-thead > tr > th,
+    .p-datatable-tbody > tr > td {
+      padding: 0.75rem;
+    }
+  }
+
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 0.75rem;
+  }
+
+  .status-text {
+    display: none;
+  }
+
+  .status-badge {
+    padding: 0.375rem;
+    min-width: auto;
+
+    i {
+      font-size: 1rem;
+    }
+  }
+}

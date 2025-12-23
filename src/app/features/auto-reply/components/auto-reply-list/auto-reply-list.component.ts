@@ -1,7 +1,8 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { TableModule } from 'primeng/table';
+import { TableModule, Table } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
@@ -11,7 +12,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TextareaModule } from 'primeng/textarea';
 import { SelectModule } from 'primeng/select';
-import { FormsModule } from '@angular/forms';
+import { TooltipModule } from 'primeng/tooltip';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { LayoutComponent } from '../../../../shared/components/layout/layout.component';
 import {
@@ -28,6 +29,7 @@ import { ICategory } from '../../../../core/models';
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     RouterModule,
     TableModule,
     ButtonModule,
@@ -39,284 +41,16 @@ import { ICategory } from '../../../../core/models';
     InputNumberModule,
     TextareaModule,
     SelectModule,
-    FormsModule,
+    TooltipModule,
     LayoutComponent,
   ],
   providers: [MessageService, ConfirmationService],
-  template: `
-    <app-layout>
-      <p-toast />
-      <p-confirmDialog />
-      <div class="page-container">
-        <div class="page-header">
-          <div class="header-content">
-            <h1 class="page-title">Auto-Reply Templates</h1>
-            <p class="page-subtitle">Manage automated response templates</p>
-          </div>
-          @if (authService.isAdmin()) {
-          <button
-            pButton
-            label="Add Template"
-            icon="pi pi-plus"
-            class="add-btn"
-            (click)="openCreateDialog()"
-          ></button>
-          }
-        </div>
-
-        <div class="table-card">
-          <p-table
-            [value]="templates()"
-            [loading]="loading()"
-            [paginator]="true"
-            [rows]="10"
-          >
-            <ng-template pTemplate="header">
-              <tr>
-                <th style="width: 15%">Trigger Keyword</th>
-                <th style="width: 35%">Message Content</th>
-                <th style="width: 15%">Category</th>
-                <th style="width: 10%">Priority</th>
-                <th style="width: 10%">Status</th>
-                <th style="width: 15%">Actions</th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-template>
-              <tr>
-                <td>
-                  <span class="keyword-badge">{{
-                    template.triggerKeyword
-                  }}</span>
-                </td>
-                <td>
-                  <div class="message-preview">
-                    {{ template.messageContent }}
-                  </div>
-                </td>
-                <td>
-                  @if (template.category) {
-                  <p-tag [value]="template.category.name" severity="info" />
-                  } @else {
-                  <span class="text-muted">-</span>
-                  }
-                </td>
-                <td>
-                  <span class="priority-badge">{{ template.priority }}</span>
-                </td>
-                <td>
-                  <p-tag
-                    [value]="template.isActive ? 'Active' : 'Inactive'"
-                    [severity]="template.isActive ? 'success' : 'danger'"
-                  />
-                </td>
-                <td>
-                  @if (authService.isAdmin()) {
-                  <div class="action-buttons">
-                    <button
-                      pButton
-                      icon="pi pi-pencil"
-                      [text]="true"
-                      [rounded]="true"
-                      severity="info"
-                      (click)="openEditDialog(template)"
-                    ></button>
-                    <button
-                      pButton
-                      icon="pi pi-trash"
-                      [text]="true"
-                      [rounded]="true"
-                      severity="danger"
-                      (click)="confirmDelete(template)"
-                    ></button>
-                  </div>
-                  }
-                </td>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="emptymessage">
-              <tr>
-                <td colspan="6">
-                  <div class="empty-state">
-                    <i class="pi pi-comments"></i>
-                    <h3>No auto-reply templates found</h3>
-                    <p>Create your first template to automate responses</p>
-                  </div>
-                </td>
-              </tr>
-            </ng-template>
-          </p-table>
-        </div>
-      </div>
-
-      <!-- Create/Edit Dialog -->
-      <p-dialog
-        [(visible)]="dialogVisible"
-        [header]="isEditing ? 'Edit Template' : 'Create Template'"
-        [modal]="true"
-        [style]="{ width: '600px' }"
-      >
-        <div class="form-grid">
-          <div class="form-field">
-            <label>Category *</label>
-            <p-select
-              [(ngModel)]="formData.categoryId"
-              [options]="categoryOptions()"
-              optionLabel="name"
-              optionValue="id"
-              placeholder="Select a category"
-              class="w-full"
-            />
-          </div>
-          <div class="form-field">
-            <label>Trigger Keyword *</label>
-            <input
-              pInputText
-              [(ngModel)]="formData.triggerKeyword"
-              class="w-full"
-              placeholder="e.g., hello, price, info"
-            />
-            <small class="hint"
-              >The keyword that triggers this auto-reply</small
-            >
-          </div>
-          <div class="form-field">
-            <label>Priority</label>
-            <p-inputNumber
-              [(ngModel)]="formData.priority"
-              [min]="0"
-              [max]="100"
-              class="w-full"
-            />
-            <small class="hint"
-              >Higher priority templates are matched first</small
-            >
-          </div>
-          <div class="form-field">
-            <label>Message Content *</label>
-            <textarea
-              pTextarea
-              [(ngModel)]="formData.messageContent"
-              rows="5"
-              class="w-full"
-              placeholder="Enter the auto-reply message..."
-            ></textarea>
-          </div>
-        </div>
-        <ng-template pTemplate="footer">
-          <button
-            pButton
-            label="Cancel"
-            severity="secondary"
-            (click)="dialogVisible = false"
-          ></button>
-          <button
-            pButton
-            [label]="isEditing ? 'Update' : 'Create'"
-            (click)="saveTemplate()"
-            [loading]="saving()"
-          ></button>
-        </ng-template>
-      </p-dialog>
-    </app-layout>
-  `,
-  styles: [
-    `
-      .page-container {
-        padding: 1.5rem;
-        max-width: 1400px;
-        margin: 0 auto;
-      }
-      .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-      }
-      .page-title {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: #1f2937;
-        margin: 0;
-      }
-      .page-subtitle {
-        color: #6b7280;
-        margin: 0.25rem 0 0;
-      }
-      .add-btn {
-        background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
-        border: none;
-      }
-      .table-card {
-        background: white;
-        border-radius: 16px;
-        overflow: hidden;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      }
-      .keyword-badge {
-        background: #e0f2fe;
-        color: #0369a1;
-        padding: 0.25rem 0.75rem;
-        border-radius: 6px;
-        font-weight: 500;
-        font-size: 0.875rem;
-      }
-      .priority-badge {
-        background: #f3f4f6;
-        color: #374151;
-        padding: 0.25rem 0.5rem;
-        border-radius: 4px;
-        font-weight: 600;
-      }
-      .message-preview {
-        max-width: 300px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        color: #6b7280;
-      }
-      .text-muted {
-        color: #9ca3af;
-        font-style: italic;
-      }
-      .action-buttons {
-        display: flex;
-        gap: 0.25rem;
-      }
-      .empty-state {
-        text-align: center;
-        padding: 3rem;
-        color: #6b7280;
-      }
-      .empty-state i {
-        font-size: 3rem;
-        color: #d1d5db;
-        margin-bottom: 1rem;
-      }
-      .form-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-      }
-      .form-field {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-      .form-field label {
-        font-weight: 500;
-        color: #374151;
-      }
-      .hint {
-        color: #9ca3af;
-        font-size: 0.75rem;
-      }
-      .w-full {
-        width: 100%;
-      }
-    `,
-  ],
+  templateUrl: './auto-reply-list.component.html',
+  styleUrl: './auto-reply-list.component.scss',
 })
 export class AutoReplyListComponent implements OnInit {
+  @ViewChild('dt') table!: Table;
+
   templates = signal<IAutoReplyTemplate[]>([]);
   categoryOptions = signal<ICategory[]>([]);
   loading = signal(false);
@@ -343,6 +77,11 @@ export class AutoReplyListComponent implements OnInit {
   ngOnInit(): void {
     this.loadTemplates();
     this.loadCategories();
+  }
+
+  onSearch(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.table?.filterGlobal(target.value, 'contains');
   }
 
   loadTemplates(): void {

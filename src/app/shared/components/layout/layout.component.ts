@@ -5,7 +5,7 @@ import {
   OnInit,
   OnDestroy,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, TitleCasePipe } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DrawerModule } from 'primeng/drawer';
@@ -47,7 +47,7 @@ import { RoleBasedRecentChatsComponent } from '../role-based-recent-chats/role-b
   template: `
     <div class="crm-layout-wrapper">
       <!-- Desktop Sidebar -->
-      <aside class="crm-sidebar">
+      <aside class="crm-sidebar" [class.collapsed]="sidebarCollapsed()">
         <div class="crm-sidebar-header">
           <div class="crm-logo">
             <i class="pi pi-briefcase crm-logo-icon"></i>
@@ -56,36 +56,6 @@ import { RoleBasedRecentChatsComponent } from '../role-based-recent-chats/role-b
         </div>
 
         <nav class="crm-sidebar-nav">
-          <!-- Recent Chats Button -->
-          <div class="crm-nav-section">
-            <button class="crm-chat-btn" pRipple (click)="toggleChatPanel()">
-              <i class="pi pi-comments"></i>
-              <span>Recent Chats</span>
-              @if (roleBasedChatService.unreadCount() > 0) {
-              <span class="chat-badge">{{
-                roleBasedChatService.unreadCount()
-              }}</span>
-              }
-            </button>
-          </div>
-
-          <!-- Notifications Button -->
-          <div class="crm-nav-section">
-            <button
-              class="crm-notification-btn"
-              pRipple
-              (click)="toggleNotificationPanel()"
-            >
-              <i class="pi pi-bell"></i>
-              <span>Notifications</span>
-              @if (notificationService.unreadCount() > 0) {
-              <span class="notification-badge">{{
-                notificationService.unreadCount()
-              }}</span>
-              }
-            </button>
-          </div>
-
           <!-- Floating Chat Controls -->
           @if (floatingChatService.chatWindows().length > 0) {
           <div class="crm-nav-section">
@@ -263,15 +233,6 @@ import { RoleBasedRecentChatsComponent } from '../role-based-recent-chats/role-b
               }}</span>
             </div>
           </div>
-          <button
-            pButton
-            pRipple
-            icon="pi pi-sign-out"
-            class="crm-logout-btn"
-            pTooltip="Logout"
-            tooltipPosition="top"
-            (click)="logout()"
-          ></button>
         </div>
       </aside>
 
@@ -393,8 +354,91 @@ import { RoleBasedRecentChatsComponent } from '../role-based-recent-chats/role-b
       </p-drawer>
 
       <!-- Main Content Area -->
-      <main class="crm-main-content">
-        <ng-content></ng-content>
+      <main
+        class="crm-main-content"
+        [class.sidebar-collapsed]="sidebarCollapsed()"
+      >
+        <!-- Top Header Bar -->
+        <header class="crm-top-header">
+          <div class="header-left">
+            <button
+              class="sidebar-toggle-btn"
+              (click)="toggleSidebar()"
+              pTooltip="Toggle Sidebar"
+              tooltipPosition="bottom"
+            >
+              <i class="pi pi-bars"></i>
+            </button>
+          </div>
+
+          <div class="header-center">
+            <div class="header-logo">
+              <i class="pi pi-briefcase"></i>
+              <span>Lead Management</span>
+            </div>
+          </div>
+
+          <div class="header-right">
+            <!-- Recent Chats -->
+            <button
+              class="header-icon-btn"
+              (click)="toggleChatPanel()"
+              pTooltip="Recent Chats"
+              tooltipPosition="bottom"
+            >
+              <i class="pi pi-comments"></i>
+              @if (roleBasedChatService.unreadCount() > 0) {
+              <span class="icon-badge">{{
+                roleBasedChatService.unreadCount()
+              }}</span>
+              }
+            </button>
+
+            <!-- Notifications -->
+            <button
+              class="header-icon-btn"
+              (click)="toggleNotificationPanel()"
+              pTooltip="Notifications"
+              tooltipPosition="bottom"
+            >
+              <i class="pi pi-bell"></i>
+              @if (notificationService.unreadCount() > 0) {
+              <span class="icon-badge notification">{{
+                notificationService.unreadCount()
+              }}</span>
+              }
+            </button>
+
+            <!-- User Menu -->
+            <div class="header-user-menu">
+              <div class="user-avatar">{{ getUserInitials() }}</div>
+              <div class="user-info">
+                <span class="user-name">{{
+                  authService.currentUser()?.name
+                }}</span>
+                <span class="user-role">{{
+                  authService.currentUser()?.role | titlecase
+                }}</span>
+              </div>
+              <button
+                pButton
+                icon="pi pi-sign-out"
+                [text]="true"
+                [rounded]="true"
+                size="small"
+                class="logout-btn"
+                pTooltip="Logout"
+                tooltipPosition="bottom"
+                (click)="logout()"
+              ></button>
+            </div>
+          </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="crm-page-content">
+          <ng-content></ng-content>
+        </div>
       </main>
 
       <!-- Floating Chat Container -->
@@ -426,21 +470,11 @@ import { RoleBasedRecentChatsComponent } from '../role-based-recent-chats/role-b
         (click)="closeNotificationPanel()"
       ></div>
       <aside class="notification-panel-container">
-        <div class="notification-panel-header">
-          <button
-            pButton
-            icon="pi pi-times"
-            [text]="true"
-            [rounded]="true"
-            size="small"
-            (click)="closeNotificationPanel()"
-            class="close-panel-btn"
-          ></button>
-        </div>
         <app-notification-panel
           [wasAutoOpened]="notificationWasAutoOpened"
           (notificationClick)="onNotificationClick($event)"
           (autoOpenToggle)="onAutoOpenToggle($event)"
+          (close)="closeNotificationPanel()"
         />
       </aside>
       }
@@ -470,6 +504,54 @@ import { RoleBasedRecentChatsComponent } from '../role-based-recent-chats/role-b
         left: 0;
         bottom: 0;
         z-index: 1000;
+        transition: all 0.3s ease;
+      }
+
+      .crm-sidebar.collapsed {
+        width: 80px;
+        min-width: 80px;
+      }
+
+      .crm-sidebar.collapsed .crm-logo-text,
+      .crm-sidebar.collapsed .crm-nav-item span,
+      .crm-sidebar.collapsed .crm-user-details,
+      .crm-sidebar.collapsed .floating-chat-controls,
+      .crm-sidebar.collapsed .crm-nav-section {
+        display: none;
+      }
+
+      .crm-sidebar.collapsed .crm-sidebar-header {
+        padding: 1.5rem 1rem;
+        justify-content: center;
+      }
+
+      .crm-sidebar.collapsed .crm-logo {
+        justify-content: center;
+      }
+
+      .crm-sidebar.collapsed .crm-nav-item {
+        padding: 0.875rem;
+        justify-content: center;
+      }
+
+      .crm-sidebar.collapsed .crm-nav-item i {
+        margin: 0;
+        font-size: 1.25rem;
+      }
+
+      .crm-sidebar.collapsed .crm-sidebar-footer {
+        padding: 1rem;
+        justify-content: center;
+      }
+
+      .crm-sidebar.collapsed .crm-user-info {
+        justify-content: center;
+      }
+
+      /* Main content adjustment for collapsed sidebar */
+      .crm-main-content.sidebar-collapsed {
+        margin-left: 80px !important;
+        max-width: calc(100vw - 80px) !important;
       }
 
       .crm-sidebar-header {
@@ -598,6 +680,184 @@ import { RoleBasedRecentChatsComponent } from '../role-based-recent-chats/role-b
         margin-left: 260px;
         min-height: 100vh;
         background-color: #f8fafc;
+        overflow-x: hidden;
+        max-width: calc(100vw - 260px);
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Top Header Bar */
+      .crm-top-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1.5rem;
+        background: white;
+        border-bottom: 1px solid #e5e7eb;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        min-height: 64px;
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex: 1;
+      }
+
+      .sidebar-toggle-btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        border: none;
+        background: #f1f5f9;
+        color: #64748b;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+      }
+
+      .sidebar-toggle-btn:hover {
+        background: #e2e8f0;
+        color: #374151;
+      }
+
+      .sidebar-toggle-btn i {
+        font-size: 1.2rem;
+      }
+
+      .header-center {
+        flex: 2;
+        display: flex;
+        justify-content: center;
+      }
+
+      .header-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        font-weight: 700;
+        font-size: 1.125rem;
+        color: #1f2937;
+      }
+
+      .header-logo i {
+        font-size: 1.5rem;
+        color: #3b82f6;
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex: 1;
+        justify-content: flex-end;
+      }
+
+      .header-icon-btn {
+        position: relative;
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        border: none;
+        background: #f1f5f9;
+        color: #64748b;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+      }
+
+      .header-icon-btn:hover {
+        background: #e2e8f0;
+        color: #374151;
+      }
+
+      .header-icon-btn i {
+        font-size: 1.1rem;
+      }
+
+      .icon-badge {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 9px;
+        background: #3b82f6;
+        color: white;
+        font-size: 0.65rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid white;
+      }
+
+      .icon-badge.notification {
+        background: #ef4444;
+      }
+
+      .header-user-menu {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 0.75rem 0.5rem 1rem;
+        margin-left: 0.5rem;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+      }
+
+      .header-user-menu .user-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.8rem;
+      }
+
+      .header-user-menu .user-info {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+      }
+
+      .header-user-menu .user-name {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #1f2937;
+      }
+
+      .header-user-menu .user-role {
+        font-size: 0.7rem;
+        color: #6b7280;
+      }
+
+      .header-user-menu .logout-btn {
+        color: #ef4444 !important;
+        margin-left: 0.25rem;
+      }
+
+      .header-user-menu .logout-btn:hover {
+        background: rgba(239, 68, 68, 0.1) !important;
+      }
+
+      /* Page Content */
+      .crm-page-content {
+        flex: 1;
+        overflow-y: auto;
       }
 
       /* Mobile Header - Hidden on desktop */
@@ -738,12 +998,63 @@ import { RoleBasedRecentChatsComponent } from '../role-based-recent-chats/role-b
         }
 
         .crm-mobile-header {
-          display: flex !important;
+          display: none !important;
         }
 
-        .crm-main-content {
+        .crm-main-content,
+        .crm-main-content.sidebar-collapsed {
           margin-left: 0 !important;
-          padding-top: 60px !important;
+          max-width: 100vw !important;
+        }
+
+        .crm-top-header {
+          padding: 0.5rem 1rem;
+        }
+
+        .sidebar-toggle-btn {
+          display: none;
+        }
+
+        .header-center {
+          flex: 1;
+        }
+
+        .header-logo span {
+          display: none;
+        }
+
+        .header-user-menu .user-info {
+          display: none;
+        }
+
+        .header-user-menu {
+          padding: 0.375rem;
+          gap: 0.5rem;
+        }
+      }
+
+      @media (max-width: 576px) {
+        .header-icon-btn {
+          width: 38px;
+          height: 38px;
+          border-radius: 10px;
+        }
+
+        .header-logo {
+          font-size: 1rem;
+        }
+
+        .header-logo i {
+          font-size: 1.25rem;
+        }
+
+        .header-user-menu .user-avatar {
+          width: 32px;
+          height: 32px;
+        }
+
+        .header-user-menu .logout-btn {
+          display: none;
         }
       }
 
@@ -768,63 +1079,11 @@ import { RoleBasedRecentChatsComponent } from '../role-based-recent-chats/role-b
         margin-bottom: 0.5rem;
       }
 
-      .crm-chat-btn,
-      .crm-notification-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        width: 100%;
-        padding: 0.875rem 0.75rem;
-        background: rgba(37, 211, 102, 0.15);
-        border: none;
-        border-radius: 10px;
-        color: #25d366;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-size: 0.9rem;
-        font-weight: 500;
-      }
-
-      .crm-notification-btn {
-        background: rgba(245, 158, 11, 0.15);
-        color: #f59e0b;
-      }
-
-      .crm-chat-btn:hover {
-        background: rgba(37, 211, 102, 0.25);
-      }
-
-      .crm-notification-btn:hover {
-        background: rgba(245, 158, 11, 0.25);
-      }
-
-      .crm-chat-btn i,
-      .crm-notification-btn i {
-        font-size: 1.1rem;
-      }
-
-      .chat-badge,
-      .notification-badge {
-        margin-left: auto;
-        background: #ef4444;
-        color: white;
-        font-size: 0.7rem;
-        font-weight: 600;
-        padding: 0.2rem 0.5rem;
-        border-radius: 10px;
-        min-width: 20px;
-        text-align: center;
-      }
-
-      .notification-badge {
-        background: #f59e0b;
-      }
-
       /* Chat Panel */
       .chat-panel-overlay {
         position: fixed;
         top: 0;
-        left: 260px;
+        left: 0;
         right: 0;
         bottom: 0;
         background: rgba(0, 0, 0, 0.3);
@@ -841,33 +1100,23 @@ import { RoleBasedRecentChatsComponent } from '../role-based-recent-chats/role-b
 
       .chat-panel {
         position: fixed;
-        top: 0;
-        left: 260px;
-        width: 400px;
-        height: 100vh;
-        background: white;
-        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+        top: 70px;
+        right: 1rem;
+        left: auto;
+        width: 340px;
+        max-height: calc(100vh - 90px);
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        border: 1px solid #e5e7eb;
         z-index: 1002;
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        transform: translateX(-100%);
-        animation: slideInRight 0.2s ease-out forwards;
-      }
-
-      @keyframes slideInRight {
-        to {
-          transform: translateX(0);
-        }
       }
 
       .chat-panel-header {
-        display: flex;
-        justify-content: flex-end;
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid #e5e7eb;
-        background: #f8fafc;
-        flex-shrink: 0;
+        display: none;
       }
 
       .close-panel-btn {
@@ -1012,9 +1261,23 @@ import { RoleBasedRecentChatsComponent } from '../role-based-recent-chats/role-b
         }
 
         .chat-panel {
+          right: 1rem;
+          left: auto;
+          top: 70px;
+          width: calc(100% - 2rem);
+          max-width: 340px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .chat-panel {
+          top: 0;
           left: 0;
+          right: 0;
           width: 100%;
-          max-width: 360px;
+          max-width: 100%;
+          max-height: 100vh;
+          border-radius: 0;
         }
       }
 
@@ -1151,25 +1414,27 @@ import { RoleBasedRecentChatsComponent } from '../role-based-recent-chats/role-b
 
       .notification-panel-container {
         position: fixed;
-        top: 0;
-        left: 260px;
-        width: 400px;
-        height: 100vh;
-        background: white;
-        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+        top: 1rem;
+        right: 1rem;
+        left: auto;
+        width: auto;
+        height: auto;
+        max-height: calc(100vh - 2rem);
+        background: transparent;
+        box-shadow: none;
         z-index: 1002;
         display: flex;
         flex-direction: column;
-        transform: translateX(-100%);
-        animation: slideInRight 0.2s ease-out forwards;
+        transform: translateY(-10px);
+        opacity: 0;
+        animation: slideDown 0.25s ease-out forwards;
       }
 
-      .notification-panel-header {
-        display: flex;
-        justify-content: flex-end;
-        padding: 1rem;
-        border-bottom: 1px solid #e5e7eb;
-        background: #f8fafc;
+      @keyframes slideDown {
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
       }
 
       .close-panel-btn {
@@ -1184,15 +1449,18 @@ import { RoleBasedRecentChatsComponent } from '../role-based-recent-chats/role-b
         background: rgba(107, 114, 128, 0.1) !important;
       }
 
-      @media (max-width: 1024px) {
+      @media (max-width: 768px) {
         .notification-panel-overlay {
           left: 0;
         }
 
         .notification-panel-container {
+          top: 0;
+          right: 0;
           left: 0;
           width: 100%;
-          max-width: 400px;
+          max-height: 100vh;
+          border-radius: 0;
         }
       }
     `,
@@ -1200,6 +1468,7 @@ import { RoleBasedRecentChatsComponent } from '../role-based-recent-chats/role-b
 })
 export class LayoutComponent implements OnInit, OnDestroy {
   mobileMenuOpen = signal(false);
+  sidebarCollapsed = signal(false);
   chatPanelVisible = false;
   notificationPanelVisible = false;
   notificationWasAutoOpened = false;
@@ -1215,6 +1484,15 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
   set mobileMenuVisible(value: boolean) {
     this.mobileMenuOpen.set(value);
+  }
+
+  toggleSidebar(): void {
+    this.sidebarCollapsed.set(!this.sidebarCollapsed());
+    // Save preference to localStorage
+    localStorage.setItem(
+      'sidebar_collapsed',
+      this.sidebarCollapsed().toString()
+    );
   }
 
   constructor(
@@ -1233,6 +1511,12 @@ export class LayoutComponent implements OnInit, OnDestroy {
     const autoOpenPref = localStorage.getItem('auto_open_notifications');
     if (autoOpenPref !== null) {
       this.autoOpenNotifications = autoOpenPref === 'true';
+    }
+
+    // Load sidebar collapsed preference
+    const sidebarPref = localStorage.getItem('sidebar_collapsed');
+    if (sidebarPref !== null) {
+      this.sidebarCollapsed.set(sidebarPref === 'true');
     }
 
     // Connect to WebSocket and listen for incoming messages globally

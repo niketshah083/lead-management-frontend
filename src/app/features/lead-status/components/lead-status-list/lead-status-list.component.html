@@ -1,0 +1,268 @@
+<app-layout>
+  <p-toast />
+  <p-confirmDialog />
+
+  <div class="page-container">
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1 class="page-title">Lead Status Master</h1>
+        <p class="page-subtitle">Manage lead status configurations</p>
+      </div>
+
+      <!-- Search in header -->
+      <div class="header-search">
+        <div class="search-wrapper">
+          <i class="pi pi-search search-icon"></i>
+          <input
+            pInputText
+            type="text"
+            placeholder="Search statuses..."
+            class="search-input"
+            (input)="onSearch($event)"
+          />
+        </div>
+      </div>
+
+      <button
+        pButton
+        label="Add Status"
+        icon="pi pi-plus"
+        class="add-btn"
+        (click)="openDialog()"
+      ></button>
+    </div>
+
+    <!-- Data Table Card -->
+    <div class="table-card">
+      <p-table
+        #dt
+        [value]="statuses()"
+        [loading]="loading()"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[5, 10, 25, 50]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} statuses"
+        [globalFilterFields]="['name', 'description']"
+        styleClass="p-datatable-striped"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="order" class="order-col">
+              Order <p-sortIcon field="order"></p-sortIcon>
+            </th>
+            <th pSortableColumn="name">
+              Name <p-sortIcon field="name"></p-sortIcon>
+            </th>
+            <th class="color-col">Color</th>
+            <th pSortableColumn="isActive" class="status-col">
+              Status <p-sortIcon field="isActive"></p-sortIcon>
+            </th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-status>
+          <tr>
+            <td class="order-col">
+              <span class="order-badge">{{ status.order }}</span>
+            </td>
+            <td>
+              <div class="status-info">
+                <i [class]="'pi ' + status.icon" class="status-icon"></i>
+                <div class="status-details">
+                  <span class="status-name">{{ status.name }}</span>
+                  @if (status.description) {
+                  <span class="status-desc">{{ status.description }}</span>
+                  }
+                </div>
+              </div>
+            </td>
+            <td class="color-col">
+              <div
+                class="color-preview"
+                [style.backgroundColor]="status.color"
+                [style.borderColor]="status.color"
+              >
+                <span class="color-text">{{ status.color }}</span>
+              </div>
+            </td>
+            <td class="status-col">
+              <span
+                class="status-badge"
+                [class.active]="status.isActive"
+                [class.inactive]="!status.isActive"
+              >
+                <i
+                  [class]="
+                    status.isActive
+                      ? 'pi pi-check-circle'
+                      : 'pi pi-times-circle'
+                  "
+                ></i>
+                {{ status.isActive ? "Active" : "Inactive" }}
+              </span>
+            </td>
+            <td class="actions-col">
+              <div class="action-buttons">
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  [text]="true"
+                  [rounded]="true"
+                  size="small"
+                  class="edit-btn"
+                  (click)="editStatus(status)"
+                  pTooltip="Edit"
+                  tooltipPosition="top"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  [text]="true"
+                  [rounded]="true"
+                  size="small"
+                  severity="danger"
+                  class="delete-btn"
+                  (click)="deleteStatus(status)"
+                  pTooltip="Delete"
+                  tooltipPosition="top"
+                ></button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="5">
+              <div class="empty-state">
+                <i class="pi pi-inbox"></i>
+                <h3>No statuses found</h3>
+                <p>Create your first lead status to get started</p>
+                <button
+                  pButton
+                  label="Add Status"
+                  icon="pi pi-plus"
+                  (click)="openDialog()"
+                ></button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+
+  <!-- Add/Edit Dialog -->
+  <p-dialog
+    [(visible)]="dialogVisible"
+    [header]="editingStatus ? 'Edit Status' : 'Add New Status'"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: '500px', maxWidth: '95vw' }"
+    styleClass="status-dialog"
+  >
+    <div class="dialog-content">
+      <div class="form-row">
+        <div class="form-field">
+          <label for="name">Name <span class="required">*</span></label>
+          <input
+            pInputText
+            id="name"
+            [(ngModel)]="formData.name"
+            placeholder="Enter status name"
+            class="w-full"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label for="description">Description</label>
+          <input
+            pInputText
+            id="description"
+            [(ngModel)]="formData.description"
+            placeholder="Enter description (optional)"
+            class="w-full"
+          />
+        </div>
+      </div>
+
+      <div class="form-row two-cols">
+        <div class="form-field">
+          <label>Color</label>
+          <div class="color-picker-wrapper">
+            <p-colorPicker [(ngModel)]="formData.color" />
+            <span class="color-value">{{ formData.color }}</span>
+          </div>
+        </div>
+        <div class="form-field">
+          <label>Background Color</label>
+          <div class="color-picker-wrapper">
+            <p-colorPicker [(ngModel)]="formData.bgColor" />
+            <span class="color-value">{{ formData.bgColor }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row two-cols">
+        <div class="form-field">
+          <label for="icon">Icon</label>
+          <input
+            pInputText
+            id="icon"
+            [(ngModel)]="formData.icon"
+            placeholder="e.g., pi-inbox"
+            class="w-full"
+          />
+        </div>
+        <div class="form-field">
+          <label for="order">Order</label>
+          <input
+            pInputText
+            id="order"
+            type="number"
+            [(ngModel)]="formData.order"
+            placeholder="0"
+            class="w-full"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field checkbox-field">
+          <p-checkbox
+            [(ngModel)]="formData.isActive"
+            [binary]="true"
+            inputId="isActive"
+          ></p-checkbox>
+          <label for="isActive">Active Status</label>
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="dialog-footer">
+        <button
+          pButton
+          label="Cancel"
+          [text]="true"
+          class="cancel-btn"
+          (click)="dialogVisible = false"
+        ></button>
+        <button
+          pButton
+          [label]="editingStatus ? 'Update' : 'Create'"
+          icon="pi pi-check"
+          (click)="saveStatus()"
+          [loading]="saving()"
+          class="save-btn"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+</app-layout>

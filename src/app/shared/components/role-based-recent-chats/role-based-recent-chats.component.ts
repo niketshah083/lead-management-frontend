@@ -7,16 +7,16 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from 'primeng/badge';
-import { ScrollPanelModule } from 'primeng/scrollpanel';
+import { InputTextModule } from 'primeng/inputtext';
 import { Subscription } from 'rxjs';
 import {
   RoleBasedChatService,
   FloatingChatService,
   AuthService,
-  LeadService,
 } from '../../../core/services';
 import { RecentChatItem } from '../../../core/services/role-based-chat.service';
 
@@ -26,314 +26,386 @@ import { RecentChatItem } from '../../../core/services/role-based-chat.service';
   imports: [
     CommonModule,
     RouterModule,
+    FormsModule,
     ButtonModule,
     TooltipModule,
     BadgeModule,
-    ScrollPanelModule,
+    InputTextModule,
   ],
   template: `
-    <div class="recent-chats-panel">
-      <div class="panel-header">
-        <div class="header-title">
-          <i class="pi pi-comments"></i>
-          <span>Recent Chats</span>
-          @if (roleBasedChatService.unreadCount() > 0) {
-          <span class="unread-badge">{{
-            roleBasedChatService.unreadCount()
-          }}</span>
+    <div class="recent-chats-container">
+      <!-- Header -->
+      <div class="chat-header">
+        <div class="header-left">
+          <div class="header-icon">
+            <i class="pi pi-comments"></i>
+          </div>
+          <div class="header-info">
+            <span class="header-title">Recent Chats</span>
+            <span class="header-subtitle">{{ getRoleDisplayText() }}</span>
+          </div>
+        </div>
+        @if (roleBasedChatService.unreadCount() > 0) {
+        <span class="unread-badge"
+          >{{ roleBasedChatService.unreadCount() }} new</span
+        >
+        }
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <button
+          class="action-chip"
+          (click)="refreshChats()"
+          pTooltip="Refresh"
+          tooltipPosition="bottom"
+        >
+          <i class="pi pi-refresh"></i>
+          <span>Refresh</span>
+        </button>
+        <button
+          class="action-chip"
+          (click)="markAllAsRead()"
+          [disabled]="roleBasedChatService.unreadCount() === 0"
+          pTooltip="Mark all read"
+          tooltipPosition="bottom"
+        >
+          <i class="pi pi-check-circle"></i>
+          <span>Mark Read</span>
+        </button>
+        <div class="action-spacer"></div>
+        <!-- Search -->
+        <div class="search-wrapper">
+          <i class="pi pi-search"></i>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            placeholder="Search..."
+            class="search-input"
+          />
+          @if (searchQuery) {
+          <i class="pi pi-times clear-btn" (click)="clearSearch()"></i>
           }
         </div>
-        <div class="header-actions">
-          <button
-            pButton
-            icon="pi pi-refresh"
-            [text]="true"
-            [rounded]="true"
-            size="small"
-            pTooltip="Refresh"
-            (click)="refreshChats()"
-            class="refresh-btn"
-          ></button>
-          <button
-            pButton
-            icon="pi pi-check-circle"
-            [text]="true"
-            [rounded]="true"
-            size="small"
-            pTooltip="Mark all as read"
-            (click)="markAllAsRead()"
-            [disabled]="roleBasedChatService.unreadCount() === 0"
-            class="mark-read-btn"
-          ></button>
-        </div>
       </div>
 
-      <div class="role-indicator">
-        <i class="pi pi-user"></i>
-        <span>{{ getRoleDisplayText() }}</span>
-      </div>
-
-      <div class="chats-content">
-        <!-- Top 5 Recent Chats -->
-        <div class="recent-section">
-          <div class="section-title">
-            Recent ({{ getRecentChats().length }})
-          </div>
-          @if (getRecentChats().length === 0) {
-          <div class="empty-chats">
+      <!-- Chat List -->
+      <div class="chat-list">
+        @if (getFilteredChats().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon">
             <i class="pi pi-inbox"></i>
-            <span>No recent chats</span>
           </div>
-          } @else { @for (chat of getRecentChats(); track chat.leadId) {
+          <h4>No chats found</h4>
+          <p>
+            @if (searchQuery) { No results for "{{ searchQuery }}" } @else {
+            Recent conversations will appear here }
+          </p>
+        </div>
+        } @else { @for (chat of getDisplayedChats(); track chat.leadId) {
+        <div
+          class="chat-item"
+          [class.unread]="chat.unreadCount > 0"
+          (click)="openChat(chat)"
+        >
+          <!-- Avatar -->
           <div
-            class="chat-item"
-            [class.unread]="chat.unreadCount > 0"
-            [class.has-unread]="chat.unreadCount > 0"
-            (click)="openChat(chat)"
+            class="chat-avatar"
+            [style.background]="getAvatarGradient(chat.leadId)"
           >
-            <div class="chat-avatar">
-              {{ getLeadInitials(chat.lead) }}
+            {{ getLeadInitials(chat.lead) }}
+          </div>
+
+          <!-- Content -->
+          <div class="chat-content">
+            <div class="chat-row-top">
+              <span class="chat-name">{{
+                chat.lead.name || chat.lead.phoneNumber
+              }}</span>
+              <span class="chat-time">{{
+                getTimeAgo(chat.lastMessageTime)
+              }}</span>
             </div>
-            <div class="chat-info">
-              <div class="chat-header">
-                <div class="chat-name">
-                  {{ chat.lead.name || chat.lead.phoneNumber }}
-                </div>
-                <div class="chat-time">
-                  {{ getTimeAgo(chat.lastMessageTime) }}
-                </div>
-              </div>
-              <div class="chat-phone">{{ chat.lead.phoneNumber }}</div>
-              <div class="chat-preview">
-                @if (chat.isInbound) {
-                <i class="pi pi-arrow-down-left"></i>
-                } @else {
-                <i class="pi pi-arrow-up-right"></i>
-                }
-                <span class="message-text">{{ chat.lastMessage }}</span>
-                @if (chat.unreadCount > 0) {
-                <span class="unread-count">{{ chat.unreadCount }}</span>
-                }
-              </div>
-              @if (chat.lead.category) {
-              <div class="chat-category">
-                <i class="pi pi-tag"></i>
-                <span>{{ chat.lead.category.name }}</span>
-              </div>
+            <div class="chat-row-phone">
+              <i class="pi pi-whatsapp"></i>
+              {{ chat.lead.phoneNumber }}
+            </div>
+            <div class="chat-row-message">
+              <i
+                class="pi"
+                [class.pi-arrow-down-left]="chat.isInbound"
+                [class.pi-arrow-up-right]="!chat.isInbound"
+              ></i>
+              <span class="message-text">{{ chat.lastMessage }}</span>
+              @if (chat.unreadCount > 0) {
+              <span class="unread-count">{{ chat.unreadCount }}</span>
               }
             </div>
-            <div class="chat-actions">
-              <button
-                pButton
-                icon="pi pi-external-link"
-                [text]="true"
-                [rounded]="true"
-                size="small"
-                pTooltip="Open floating chat"
-                (click)="openFloatingChat(chat, $event)"
-                class="float-action"
-              ></button>
-            </div>
-          </div>
-          } }
-        </div>
-
-        <!-- All Chats (Scrollable) -->
-        @if (getAllChats().length > 5) {
-        <div class="all-chats-section">
-          <div class="section-title">
-            All Chats ({{ getAllChats().length }})
-            <button
-              pButton
-              [icon]="showAllChats ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
-              [text]="true"
-              [rounded]="true"
-              size="small"
-              (click)="toggleAllChats()"
-              class="toggle-btn"
-            ></button>
-          </div>
-
-          @if (showAllChats) {
-          <p-scrollPanel
-            [style]="{ width: '100%', height: '300px' }"
-            styleClass="custom-scrollpanel"
-          >
-            @for (chat of getAllChats().slice(5); track chat.leadId) {
-            <div
-              class="chat-item compact"
-              [class.unread]="chat.unreadCount > 0"
-              (click)="openChat(chat)"
-            >
-              <div class="chat-avatar small">
-                {{ getLeadInitials(chat.lead) }}
-              </div>
-              <div class="chat-info">
-                <div class="chat-header">
-                  <div class="chat-name">
-                    {{ chat.lead.name || chat.lead.phoneNumber }}
-                  </div>
-                  @if (chat.unreadCount > 0) {
-                  <span class="unread-count small">{{ chat.unreadCount }}</span>
-                  }
-                </div>
-                <div class="chat-preview compact">
-                  @if (chat.isInbound) {
-                  <i class="pi pi-arrow-down-left"></i>
-                  } @else {
-                  <i class="pi pi-arrow-up-right"></i>
-                  }
-                  <span class="message-text">{{ chat.lastMessage }}</span>
-                </div>
-              </div>
-              <div class="chat-time small">
-                {{ getTimeAgo(chat.lastMessageTime) }}
-              </div>
-            </div>
+            @if (chat.lead.category) {
+            <span class="category-badge">
+              <i class="pi pi-tag"></i>
+              {{ chat.lead.category.name }}
+            </span>
             }
-          </p-scrollPanel>
-          }
+          </div>
+
+          <!-- Action -->
+          <button
+            class="chat-action-btn"
+            (click)="openFloatingChat(chat, $event)"
+            pTooltip="Open chat"
+            tooltipPosition="left"
+          >
+            <i class="pi pi-external-link"></i>
+          </button>
         </div>
+        } @if (!showAllChats && getFilteredChats().length > 5) {
+        <div class="show-more" (click)="toggleShowAll()">
+          <span>Show {{ getFilteredChats().length - 5 }} more</span>
+          <i class="pi pi-chevron-down"></i>
+        </div>
+        } @if (showAllChats && getFilteredChats().length > 5) {
+        <div class="show-more" (click)="toggleShowAll()">
+          <span>Show less</span>
+          <i class="pi pi-chevron-up"></i>
+        </div>
+        } }
+      </div>
+
+      <!-- Footer -->
+      <div class="chat-footer">
+        <span class="footer-stat">
+          <i class="pi pi-comments"></i>
+          {{ getAllChats().length }} chats
+        </span>
+        @if (roleBasedChatService.unreadCount() > 0) {
+        <span class="footer-stat highlight">
+          <i class="pi pi-envelope"></i>
+          {{ roleBasedChatService.unreadCount() }} unread
+        </span>
         }
       </div>
     </div>
   `,
   styles: [
     `
-      .recent-chats-panel {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        border: 1px solid #e5e7eb;
+      .recent-chats-container {
+        background: #ffffff;
         overflow: hidden;
-        max-height: 600px;
         display: flex;
         flex-direction: column;
+        height: 100%;
+        width: 100%;
       }
 
-      .panel-header {
+      /* Header */
+      .chat-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         padding: 1rem 1.25rem;
-        background: #f8fafc;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
         border-bottom: 1px solid #e5e7eb;
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .header-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.1rem;
+      }
+
+      .header-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
       }
 
       .header-title {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-weight: 600;
+        font-weight: 700;
+        font-size: 1rem;
         color: #1f2937;
-        font-size: 0.9rem;
       }
 
-      .header-title i {
-        color: #25d366;
-        font-size: 1rem;
+      .header-subtitle {
+        font-size: 0.7rem;
+        color: #6b7280;
       }
 
       .unread-badge {
-        background: #ef4444;
+        background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
         color: white;
         font-size: 0.7rem;
         font-weight: 600;
-        padding: 0.2rem 0.5rem;
-        border-radius: 10px;
-        min-width: 20px;
-        text-align: center;
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
       }
 
-      .header-actions {
-        display: flex;
-        gap: 0.25rem;
-      }
-
-      .header-actions button {
-        width: 28px !important;
-        height: 28px !important;
-        color: #6b7280 !important;
-        background: transparent !important;
-        border: none !important;
-      }
-
-      .header-actions button:hover {
-        background: rgba(107, 114, 128, 0.1) !important;
-      }
-
-      .header-actions button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .role-indicator {
+      /* Quick Actions */
+      .quick-actions {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        padding: 0.5rem 1.25rem;
-        background: rgba(37, 211, 102, 0.1);
-        border-bottom: 1px solid #e5e7eb;
-        font-size: 0.8rem;
-        color: #25d366;
-        font-weight: 500;
-      }
-
-      .role-indicator i {
-        font-size: 0.75rem;
-      }
-
-      .chats-content {
-        flex: 1;
-        overflow: hidden;
-      }
-
-      .recent-section,
-      .all-chats-section {
-        border-bottom: 1px solid #f1f5f9;
-      }
-
-      .section-title {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.75rem 1.25rem;
+        padding: 0.75rem 1rem;
         background: #f8fafc;
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #374151;
         border-bottom: 1px solid #e5e7eb;
+        flex-wrap: wrap;
       }
 
-      .toggle-btn {
-        width: 24px !important;
-        height: 24px !important;
-        color: #6b7280 !important;
-        background: transparent !important;
-        border: none !important;
+      .action-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.375rem 0.75rem;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: #6b7280;
+        cursor: pointer;
+        transition: all 0.2s ease;
       }
 
-      .empty-chats {
+      .action-chip:hover:not(:disabled) {
+        border-color: #25d366;
+        color: #25d366;
+        background: rgba(37, 211, 102, 0.05);
+      }
+
+      .action-chip:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .action-chip i {
+        font-size: 0.8rem;
+      }
+
+      .action-spacer {
+        flex: 1;
+      }
+
+      .search-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.375rem 0.75rem;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 20px;
+        min-width: 120px;
+      }
+
+      .search-wrapper i {
+        font-size: 0.8rem;
+        color: #9ca3af;
+      }
+
+      .search-input {
+        border: none;
+        outline: none;
+        font-size: 0.75rem;
+        width: 80px;
+        background: transparent;
+        color: #374151;
+      }
+
+      .search-input::placeholder {
+        color: #9ca3af;
+      }
+
+      .clear-btn {
+        cursor: pointer;
+        padding: 0.125rem;
+        border-radius: 50%;
+        transition: all 0.2s;
+      }
+
+      .clear-btn:hover {
+        background: #f1f5f9;
+        color: #374151;
+      }
+
+      /* Chat List */
+      .chat-list {
+        flex: 1;
+        overflow-y: auto;
+        max-height: 400px;
+      }
+
+      .chat-list::-webkit-scrollbar {
+        width: 5px;
+      }
+
+      .chat-list::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .chat-list::-webkit-scrollbar-thumb {
+        background: #e2e8f0;
+        border-radius: 3px;
+      }
+
+      /* Empty State */
+      .empty-state {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 2rem;
-        color: #9ca3af;
-        gap: 0.5rem;
+        padding: 2.5rem 1.5rem;
+        text-align: center;
       }
 
-      .empty-chats i {
-        font-size: 2rem;
+      .empty-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
       }
 
+      .empty-icon i {
+        font-size: 1.5rem;
+        color: #94a3b8;
+      }
+
+      .empty-state h4 {
+        margin: 0 0 0.375rem 0;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #374151;
+      }
+
+      .empty-state p {
+        margin: 0;
+        font-size: 0.8rem;
+        color: #6b7280;
+      }
+
+      /* Chat Item */
       .chat-item {
         display: flex;
+        align-items: flex-start;
         gap: 0.75rem;
-        padding: 1rem 1.25rem;
+        padding: 0.875rem 1rem;
         border-bottom: 1px solid #f1f5f9;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.15s ease;
         position: relative;
       }
 
@@ -341,94 +413,101 @@ import { RecentChatItem } from '../../../core/services/role-based-chat.service';
         background: #f8fafc;
       }
 
+      .chat-item:hover .chat-action-btn {
+        opacity: 1;
+      }
+
       .chat-item.unread {
-        background: #f0fdf4;
+        background: linear-gradient(
+          90deg,
+          rgba(37, 211, 102, 0.06) 0%,
+          transparent 100%
+        );
         border-left: 3px solid #25d366;
       }
 
-      .chat-item.compact {
-        padding: 0.75rem 1.25rem;
+      .chat-item:last-of-type {
+        border-bottom: none;
       }
 
+      /* Avatar */
       .chat-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
-        color: white;
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-weight: 600;
-        font-size: 0.875rem;
+        color: white;
+        font-weight: 700;
+        font-size: 0.85rem;
         flex-shrink: 0;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
       }
 
-      .chat-avatar.small {
-        width: 32px;
-        height: 32px;
-        font-size: 0.75rem;
-      }
-
-      .chat-info {
+      /* Chat Content */
+      .chat-content {
         flex: 1;
         min-width: 0;
       }
 
-      .chat-header {
+      .chat-row-top {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 0.25rem;
+        align-items: center;
+        margin-bottom: 0.2rem;
       }
 
       .chat-name {
         font-weight: 600;
-        color: #1f2937;
         font-size: 0.875rem;
+        color: #1f2937;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        max-width: 150px;
       }
 
       .chat-time {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         color: #9ca3af;
         white-space: nowrap;
+        flex-shrink: 0;
       }
 
-      .chat-time.small {
-        font-size: 0.65rem;
-      }
-
-      .chat-phone {
-        font-size: 0.75rem;
-        color: #6b7280;
-        margin-bottom: 0.5rem;
-      }
-
-      .chat-preview {
+      .chat-row-phone {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        font-size: 0.8rem;
-        color: #4b5563;
-        line-height: 1.4;
-      }
-
-      .chat-preview.compact {
-        font-size: 0.75rem;
         gap: 0.25rem;
+        font-size: 0.7rem;
+        color: #6b7280;
+        margin-bottom: 0.35rem;
       }
 
-      .chat-preview i {
-        font-size: 0.7rem;
+      .chat-row-phone i {
+        font-size: 0.65rem;
+        color: #25d366;
+      }
+
+      .chat-row-message {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+      }
+
+      .chat-row-message > i {
+        font-size: 0.6rem;
         color: #9ca3af;
-        flex-shrink: 0;
+      }
+
+      .chat-row-message > i.pi-arrow-down-left {
+        color: #25d366;
       }
 
       .message-text {
         flex: 1;
+        font-size: 0.75rem;
+        color: #4b5563;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -437,8 +516,8 @@ import { RecentChatItem } from '../../../core/services/role-based-chat.service';
       .unread-count {
         background: #ef4444;
         color: white;
-        font-size: 0.65rem;
-        font-weight: 600;
+        font-size: 0.6rem;
+        font-weight: 700;
         padding: 0.15rem 0.4rem;
         border-radius: 8px;
         min-width: 18px;
@@ -446,58 +525,186 @@ import { RecentChatItem } from '../../../core/services/role-based-chat.service';
         flex-shrink: 0;
       }
 
-      .unread-count.small {
+      .category-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        margin-top: 0.35rem;
+        padding: 0.15rem 0.4rem;
+        background: #f1f5f9;
+        border-radius: 4px;
         font-size: 0.6rem;
-        padding: 0.1rem 0.3rem;
-        min-width: 16px;
+        color: #64748b;
       }
 
-      .chat-category {
+      .category-badge i {
+        font-size: 0.55rem;
+      }
+
+      /* Chat Action */
+      .chat-action-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        border: none;
+        background: rgba(37, 211, 102, 0.1);
+        color: #25d366;
+        cursor: pointer;
         display: flex;
         align-items: center;
-        gap: 0.25rem;
-        font-size: 0.7rem;
-        color: #6b7280;
+        justify-content: center;
+        opacity: 0;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
         margin-top: 0.25rem;
       }
 
-      .chat-category i {
-        font-size: 0.65rem;
+      .chat-action-btn:hover {
+        background: rgba(37, 211, 102, 0.2);
+        transform: scale(1.05);
       }
 
-      .chat-actions {
+      .chat-action-btn i {
+        font-size: 0.8rem;
+      }
+
+      /* Show More */
+      .show-more {
         display: flex;
         align-items: center;
-        opacity: 0;
-        transition: opacity 0.2s;
+        justify-content: center;
+        gap: 0.375rem;
+        padding: 0.75rem;
+        background: #f8fafc;
+        color: #3b82f6;
+        font-size: 0.75rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-top: 1px solid #e5e7eb;
       }
 
-      .chat-item:hover .chat-actions {
-        opacity: 1;
+      .show-more:hover {
+        background: #f1f5f9;
+        color: #2563eb;
       }
 
-      .float-action {
-        width: 28px !important;
-        height: 28px !important;
-        color: #25d366 !important;
-        background: rgba(37, 211, 102, 0.1) !important;
-        border: none !important;
+      .show-more i {
+        font-size: 0.7rem;
       }
 
-      .float-action:hover {
-        background: rgba(37, 211, 102, 0.2) !important;
+      /* Footer */
+      .chat-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: #f8fafc;
+        border-top: 1px solid #e5e7eb;
       }
 
-      /* Custom scrollpanel styles */
-      :host ::ng-deep .custom-scrollpanel .p-scrollpanel-bar-y {
-        background: #cbd5e1;
-        width: 4px;
-        border-radius: 2px;
+      .footer-stat {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.7rem;
+        color: #6b7280;
       }
 
-      :host ::ng-deep .custom-scrollpanel .p-scrollpanel-thumb-y {
-        background: #94a3b8;
-        border-radius: 2px;
+      .footer-stat i {
+        font-size: 0.75rem;
+      }
+
+      .footer-stat.highlight {
+        color: #25d366;
+        font-weight: 600;
+      }
+
+      /* Mobile Responsive */
+      @media (max-width: 480px) {
+        .recent-chats-container {
+          border-radius: 0;
+          max-height: 100vh;
+        }
+
+        .chat-header {
+          padding: 0.875rem 1rem;
+        }
+
+        .header-icon {
+          width: 36px;
+          height: 36px;
+          font-size: 1rem;
+        }
+
+        .header-title {
+          font-size: 0.9rem;
+        }
+
+        .quick-actions {
+          padding: 0.625rem 0.875rem;
+          gap: 0.375rem;
+        }
+
+        .action-chip span {
+          display: none;
+        }
+
+        .action-chip {
+          padding: 0.4rem 0.5rem;
+        }
+
+        .search-wrapper {
+          flex: 1;
+          min-width: auto;
+        }
+
+        .search-input {
+          width: 100%;
+        }
+
+        .chat-item {
+          padding: 0.75rem 0.875rem;
+        }
+
+        .chat-avatar {
+          width: 38px;
+          height: 38px;
+          font-size: 0.8rem;
+        }
+
+        .chat-name {
+          max-width: 120px;
+          font-size: 0.8rem;
+        }
+
+        .chat-action-btn {
+          opacity: 1;
+          width: 28px;
+          height: 28px;
+        }
+
+        .chat-list {
+          max-height: calc(100vh - 200px);
+        }
+      }
+
+      @media (max-width: 360px) {
+        .header-subtitle {
+          display: none;
+        }
+
+        .chat-name {
+          max-width: 100px;
+        }
+
+        .action-spacer {
+          display: none;
+        }
+
+        .quick-actions {
+          justify-content: space-between;
+        }
       }
     `,
   ],
@@ -506,20 +713,28 @@ export class RoleBasedRecentChatsComponent implements OnInit, OnDestroy {
   @Output() chatSelected = new EventEmitter<RecentChatItem>();
 
   showAllChats = false;
+  searchQuery = '';
   private subscription?: Subscription;
+
+  private avatarColors = [
+    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+    'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+    'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+  ];
 
   constructor(
     public roleBasedChatService: RoleBasedChatService,
     private floatingChatService: FloatingChatService,
-    public authService: AuthService,
-    private leadService: LeadService
+    public authService: AuthService
   ) {}
 
   ngOnInit(): void {
-    // Subscribe to chat updates
     this.subscription = this.roleBasedChatService.recentChats$.subscribe();
-
-    // Initial load
     this.roleBasedChatService.refreshChats();
   }
 
@@ -527,8 +742,24 @@ export class RoleBasedRecentChatsComponent implements OnInit, OnDestroy {
     this.subscription?.unsubscribe();
   }
 
-  getRecentChats(): RecentChatItem[] {
-    return this.roleBasedChatService.getRecentChats(5);
+  getFilteredChats(): RecentChatItem[] {
+    const allChats = this.roleBasedChatService.getAllRecentChats();
+    if (!this.searchQuery.trim()) {
+      return allChats;
+    }
+
+    const query = this.searchQuery.toLowerCase();
+    return allChats.filter(
+      (chat) =>
+        (chat.lead.name && chat.lead.name.toLowerCase().includes(query)) ||
+        chat.lead.phoneNumber.includes(query) ||
+        chat.lastMessage.toLowerCase().includes(query)
+    );
+  }
+
+  getDisplayedChats(): RecentChatItem[] {
+    const filtered = this.getFilteredChats();
+    return this.showAllChats ? filtered : filtered.slice(0, 5);
   }
 
   getAllChats(): RecentChatItem[] {
@@ -543,6 +774,13 @@ export class RoleBasedRecentChatsComponent implements OnInit, OnDestroy {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  }
+
+  getAvatarGradient(leadId: string): string {
+    const hash = leadId
+      .split('')
+      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return this.avatarColors[hash % this.avatarColors.length];
   }
 
   getTimeAgo(date: Date): string {
@@ -565,11 +803,11 @@ export class RoleBasedRecentChatsComponent implements OnInit, OnDestroy {
 
     switch (user.role) {
       case 'admin':
-        return 'Admin - All Leads';
+        return 'All Leads';
       case 'manager':
-        return 'Manager - Category Leads';
+        return 'Category Leads';
       case 'customer_executive':
-        return 'Executive - Assigned Leads';
+        return 'Assigned Leads';
       default:
         return user.role;
     }
@@ -577,9 +815,7 @@ export class RoleBasedRecentChatsComponent implements OnInit, OnDestroy {
 
   openChat(chat: RecentChatItem): void {
     this.roleBasedChatService.markAsRead(chat.leadId);
-    // Open floating chat popup directly instead of emitting for navigation
     this.floatingChatService.openChat(chat.lead);
-    // Still emit for parent component to close panel
     this.chatSelected.emit(chat);
   }
 
@@ -602,7 +838,11 @@ export class RoleBasedRecentChatsComponent implements OnInit, OnDestroy {
     });
   }
 
-  toggleAllChats(): void {
+  toggleShowAll(): void {
     this.showAllChats = !this.showAllChats;
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
   }
 }

@@ -47,13 +47,21 @@ export class LeadService {
 
   updateLeadStatus(
     id: string,
-    status: string,
-    notes?: string
+    status?: string,
+    notes?: string,
+    statusMasterId?: string
   ): Observable<IApiResponse<ILead>> {
-    return this.apiService.put<ILead>(`${this.basePath}/${id}/status`, {
-      status,
-      notes,
-    });
+    const body: { status?: string; notes?: string; statusMasterId?: string } =
+      {};
+    if (statusMasterId) {
+      body.statusMasterId = statusMasterId;
+    } else if (status) {
+      body.status = status;
+    }
+    if (notes) {
+      body.notes = notes;
+    }
+    return this.apiService.put<ILead>(`${this.basePath}/${id}/status`, body);
   }
 
   reassignLead(

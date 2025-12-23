@@ -1,0 +1,301 @@
+<app-layout>
+  <p-toast />
+  <p-confirmDialog />
+
+  <div class="page-container">
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1 class="page-title">SLA Policies</h1>
+        <p class="page-subtitle">Manage service level agreements</p>
+      </div>
+
+      <!-- Search in header -->
+      <div class="header-search">
+        <div class="search-wrapper">
+          <i class="pi pi-search search-icon"></i>
+          <input
+            pInputText
+            type="text"
+            placeholder="Search policies..."
+            class="search-input"
+            (input)="onSearch($event)"
+          />
+        </div>
+      </div>
+
+      @if (authService.isAdmin()) {
+      <button
+        pButton
+        label="Add Policy"
+        icon="pi pi-plus"
+        class="add-btn"
+        (click)="openCreateDialog()"
+      ></button>
+      }
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stats-row">
+      <div class="stat-card warning">
+        <div class="stat-icon">
+          <i class="pi pi-exclamation-triangle"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ warningLeads().length }}</span>
+          <span class="stat-label">Approaching Breach</span>
+        </div>
+      </div>
+      <div class="stat-card danger">
+        <div class="stat-icon">
+          <i class="pi pi-times-circle"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ breachedLeads().length }}</span>
+          <span class="stat-label">Breached</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Table Card -->
+    <div class="table-card">
+      <p-table
+        #dt
+        [value]="policies()"
+        [loading]="loading()"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[5, 10, 25, 50]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} policies"
+        [globalFilterFields]="['name']"
+        styleClass="p-datatable-striped"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="name">
+              Name <p-sortIcon field="name"></p-sortIcon>
+            </th>
+            <th class="time-col">First Response</th>
+            <th class="time-col">Follow Up</th>
+            <th class="time-col">Resolution</th>
+            <th class="warning-col">Warning %</th>
+            <th class="default-col">Default</th>
+            <th pSortableColumn="isActive" class="status-col">
+              Status <p-sortIcon field="isActive"></p-sortIcon>
+            </th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-policy>
+          <tr>
+            <td>
+              <div class="policy-info">
+                <i class="pi pi-clock policy-icon"></i>
+                <span class="policy-name">{{ policy.name }}</span>
+              </div>
+            </td>
+            <td class="time-col">
+              <span class="time-badge">{{
+                formatMinutes(policy.firstResponseMinutes)
+              }}</span>
+            </td>
+            <td class="time-col">
+              <span class="time-badge">{{
+                formatMinutes(policy.followUpMinutes)
+              }}</span>
+            </td>
+            <td class="time-col">
+              <span class="time-badge">{{
+                formatMinutes(policy.resolutionMinutes)
+              }}</span>
+            </td>
+            <td class="warning-col">
+              <span class="warning-badge"
+                >{{ policy.warningThresholdPercent }}%</span
+              >
+            </td>
+            <td class="default-col">
+              @if (policy.isDefault) {
+              <span class="default-badge">
+                <i class="pi pi-star-fill"></i> Default
+              </span>
+              } @else {
+              <span class="no-default">-</span>
+              }
+            </td>
+            <td class="status-col">
+              <span
+                class="status-badge"
+                [class.active]="policy.isActive"
+                [class.inactive]="!policy.isActive"
+              >
+                <i
+                  [class]="
+                    policy.isActive
+                      ? 'pi pi-check-circle'
+                      : 'pi pi-times-circle'
+                  "
+                ></i>
+                {{ policy.isActive ? "Active" : "Inactive" }}
+              </span>
+            </td>
+            <td class="actions-col">
+              @if (authService.isAdmin()) {
+              <div class="action-buttons">
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  [text]="true"
+                  [rounded]="true"
+                  size="small"
+                  class="edit-btn"
+                  (click)="openEditDialog(policy)"
+                  pTooltip="Edit"
+                  tooltipPosition="top"
+                ></button>
+              </div>
+              }
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="8">
+              <div class="empty-state">
+                <i class="pi pi-clock"></i>
+                <h3>No SLA policies found</h3>
+                <p>Create your first SLA policy to get started</p>
+                @if (authService.isAdmin()) {
+                <button
+                  pButton
+                  label="Add Policy"
+                  icon="pi pi-plus"
+                  (click)="openCreateDialog()"
+                ></button>
+                }
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+
+  <!-- Create/Edit Dialog -->
+  <p-dialog
+    [(visible)]="dialogVisible"
+    [header]="isEditing ? 'Edit Policy' : 'Create Policy'"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: '500px', maxWidth: '95vw' }"
+    styleClass="sla-dialog"
+  >
+    <div class="dialog-content">
+      <div class="form-row">
+        <div class="form-field">
+          <label for="name">Name <span class="required">*</span></label>
+          <input
+            pInputText
+            id="name"
+            [(ngModel)]="formData.name"
+            class="w-full"
+            placeholder="Policy name"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label for="firstResponse"
+            >First Response Time (minutes)
+            <span class="required">*</span></label
+          >
+          <p-inputNumber
+            [(ngModel)]="formData.firstResponseMinutes"
+            [min]="1"
+            class="w-full"
+          />
+          <small class="hint">Time allowed for first response to a lead</small>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label for="followUp"
+            >Follow Up Time (minutes) <span class="required">*</span></label
+          >
+          <p-inputNumber
+            [(ngModel)]="formData.followUpMinutes"
+            [min]="1"
+            class="w-full"
+          />
+          <small class="hint">Time allowed between follow-ups</small>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label for="resolution"
+            >Resolution Time (minutes) <span class="required">*</span></label
+          >
+          <p-inputNumber
+            [(ngModel)]="formData.resolutionMinutes"
+            [min]="1"
+            class="w-full"
+          />
+          <small class="hint">Total time allowed to resolve a lead</small>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label for="warning">Warning Threshold (%)</label>
+          <p-inputNumber
+            [(ngModel)]="formData.warningThresholdPercent"
+            [min]="1"
+            [max]="100"
+            class="w-full"
+          />
+          <small class="hint"
+            >Alert when this percentage of time has elapsed</small
+          >
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field checkbox-field">
+          <p-checkbox
+            [(ngModel)]="formData.isDefault"
+            [binary]="true"
+            inputId="isDefault"
+          ></p-checkbox>
+          <label for="isDefault">Set as default policy</label>
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="dialog-footer">
+        <button
+          pButton
+          label="Cancel"
+          [text]="true"
+          class="cancel-btn"
+          (click)="dialogVisible = false"
+        ></button>
+        <button
+          pButton
+          [label]="isEditing ? 'Update' : 'Create'"
+          icon="pi pi-check"
+          (click)="savePolicy()"
+          [loading]="saving()"
+          class="save-btn"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+</app-layout>

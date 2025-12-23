@@ -83,7 +83,9 @@ import { LayoutComponent } from '../../../../shared/components/layout/layout.com
             [class.inbound]="message.direction === 'inbound'"
           >
             <div class="message-bubble">
-              @if (message.mediaUrl) {
+              @if (message.direction === 'outbound' && message.sender) {
+              <div class="sender-name">{{ message.sender.name }}</div>
+              } @if (message.mediaUrl) {
               <div class="message-media">
                 @if (message.mediaType === 'image') {
                 <p-image
@@ -117,9 +119,7 @@ import { LayoutComponent } from '../../../../shared/components/layout/layout.com
                 <span class="message-time">{{
                   message.createdAt | date : 'shortTime'
                 }}</span>
-                @if (message.sender) {
-                <span class="message-sender">{{ message.sender.name }}</span>
-                } @if (message.isAutoReply) {
+                @if (message.isAutoReply) {
                 <span class="auto-badge">Auto</span>
                 }
               </div>
@@ -296,6 +296,12 @@ import { LayoutComponent } from '../../../../shared/components/layout/layout.com
         color: #1f2937;
         border-bottom-left-radius: 4px;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+      .sender-name {
+        font-size: 0.7rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        opacity: 0.9;
       }
       .message-content {
         margin: 0 0 0.25rem 0;

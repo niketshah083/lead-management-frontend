@@ -1,0 +1,378 @@
+<app-layout>
+  <p-toast />
+  <p-confirmDialog />
+
+  <div class="page-container">
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1 class="page-title">Business Types</h1>
+        <p class="page-subtitle">
+          Configure business types and custom fields for leads
+        </p>
+      </div>
+      <button
+        pButton
+        label="Add Business Type"
+        icon="pi pi-plus"
+        class="add-btn"
+        (click)="openBusinessTypeDialog()"
+      ></button>
+    </div>
+
+    @if (loading()) {
+    <div class="loading-state">
+      <i class="pi pi-spin pi-spinner"></i>
+      <p>Loading business types...</p>
+    </div>
+    } @else {
+    <div class="business-types-grid">
+      @for (bt of businessTypes(); track bt.id) {
+      <div class="business-type-card">
+        <div class="bt-header">
+          <div class="bt-icon" [style.background]="bt.color + '20'">
+            <i [class]="bt.icon" [style.color]="bt.color"></i>
+          </div>
+          <div class="bt-info">
+            <h3>{{ bt.name }}</h3>
+            <p>{{ bt.description || "No description" }}</p>
+          </div>
+          <div class="bt-actions">
+            <button
+              pButton
+              icon="pi pi-pencil"
+              [text]="true"
+              [rounded]="true"
+              size="small"
+              class="edit-btn"
+              pTooltip="Edit"
+              tooltipPosition="top"
+              (click)="editBusinessType(bt)"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              [text]="true"
+              [rounded]="true"
+              size="small"
+              severity="danger"
+              class="delete-btn"
+              pTooltip="Delete"
+              tooltipPosition="top"
+              (click)="confirmDeleteBusinessType(bt)"
+            ></button>
+          </div>
+        </div>
+
+        <div class="bt-fields">
+          <div class="fields-header">
+            <span class="fields-count"
+              >{{ bt.fields?.length || 0 }} Fields</span
+            >
+            <button
+              pButton
+              label="Add Field"
+              icon="pi pi-plus"
+              [text]="true"
+              size="small"
+              (click)="openFieldDialog(bt)"
+            ></button>
+          </div>
+
+          @if (bt.fields && bt.fields.length > 0) {
+          <div class="fields-list">
+            @for (field of bt.fields; track field.id) {
+            <div class="field-item" [class.inactive]="!field.isActive">
+              <div class="field-info">
+                <span class="field-label">{{ field.label }}</span>
+                <div class="field-meta">
+                  <p-tag
+                    [value]="getFieldTypeLabel(field.fieldType)"
+                    [severity]="getFieldTypeSeverity(field.fieldType)"
+                    [rounded]="true"
+                  />
+                  @if (field.isRequired) {
+                  <span class="required-badge">Required</span>
+                  }
+                </div>
+              </div>
+              <div class="field-actions">
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  [text]="true"
+                  [rounded]="true"
+                  size="small"
+                  (click)="editField(bt, field)"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  [text]="true"
+                  [rounded]="true"
+                  size="small"
+                  severity="danger"
+                  (click)="confirmDeleteField(field)"
+                ></button>
+              </div>
+            </div>
+            }
+          </div>
+          } @else {
+          <div class="no-fields">
+            <i class="pi pi-inbox"></i>
+            <span>No fields configured</span>
+          </div>
+          }
+        </div>
+      </div>
+      } @empty {
+      <div class="empty-state">
+        <i class="pi pi-briefcase"></i>
+        <h3>No Business Types</h3>
+        <p>
+          Create your first business type to start configuring custom fields
+        </p>
+        <button
+          pButton
+          label="Create Business Type"
+          icon="pi pi-plus"
+          (click)="openBusinessTypeDialog()"
+        ></button>
+      </div>
+      }
+    </div>
+    }
+  </div>
+
+  <!-- Business Type Dialog -->
+  <p-dialog
+    [(visible)]="businessTypeDialogVisible"
+    [header]="editingBusinessType ? 'Edit Business Type' : 'Add Business Type'"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: '500px', maxWidth: '95vw' }"
+    styleClass="business-type-dialog"
+  >
+    <div class="dialog-content">
+      <div class="form-row">
+        <div class="form-field">
+          <label>Name <span class="required">*</span></label>
+          <input
+            pInputText
+            [(ngModel)]="businessTypeForm.name"
+            class="w-full"
+            placeholder="e.g., Manufacturing"
+          />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Description</label>
+          <textarea
+            pTextarea
+            [(ngModel)]="businessTypeForm.description"
+            class="w-full"
+            rows="3"
+            placeholder="Brief description"
+          ></textarea>
+        </div>
+      </div>
+      <div class="form-row two-cols">
+        <div class="form-field">
+          <label>Icon</label>
+          <p-select
+            [(ngModel)]="businessTypeForm.icon"
+            [options]="iconOptions"
+            placeholder="Select icon"
+            class="w-full"
+          >
+            <ng-template pTemplate="selectedItem" let-item>
+              <div class="icon-option">
+                <i [class]="item.value"></i>
+                <span>{{ item.label }}</span>
+              </div>
+            </ng-template>
+            <ng-template pTemplate="item" let-item>
+              <div class="icon-option">
+                <i [class]="item.value"></i>
+                <span>{{ item.label }}</span>
+              </div>
+            </ng-template>
+          </p-select>
+        </div>
+        <div class="form-field">
+          <label>Color</label>
+          <input
+            type="color"
+            [(ngModel)]="businessTypeForm.color"
+            class="color-input"
+          />
+        </div>
+      </div>
+    </div>
+    <ng-template pTemplate="footer">
+      <div class="dialog-footer">
+        <button
+          pButton
+          label="Cancel"
+          [text]="true"
+          class="cancel-btn"
+          (click)="businessTypeDialogVisible = false"
+        ></button>
+        <button
+          pButton
+          [label]="editingBusinessType ? 'Update' : 'Create'"
+          icon="pi pi-check"
+          (click)="saveBusinessType()"
+          [loading]="saving()"
+          [disabled]="!businessTypeForm.name"
+          class="save-btn"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Field Dialog -->
+  <p-dialog
+    [(visible)]="fieldDialogVisible"
+    [header]="editingField ? 'Edit Field' : 'Add Field'"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: '600px', maxWidth: '95vw' }"
+    styleClass="field-dialog"
+  >
+    <div class="dialog-content">
+      <div class="form-row two-cols">
+        <div class="form-field">
+          <label>Field Name <span class="required">*</span></label>
+          <input
+            pInputText
+            [(ngModel)]="fieldForm.name"
+            class="w-full"
+            placeholder="e.g., product_category"
+          />
+          <small class="hint">Internal name (no spaces)</small>
+        </div>
+        <div class="form-field">
+          <label>Label <span class="required">*</span></label>
+          <input
+            pInputText
+            [(ngModel)]="fieldForm.label"
+            class="w-full"
+            placeholder="e.g., Product Category"
+          />
+        </div>
+      </div>
+      <div class="form-row two-cols">
+        <div class="form-field">
+          <label>Field Type <span class="required">*</span></label>
+          <p-select
+            [(ngModel)]="fieldForm.fieldType"
+            [options]="fieldTypeOptions"
+            placeholder="Select type"
+            class="w-full"
+          />
+        </div>
+        <div class="form-field checkbox-field">
+          <p-checkbox
+            [(ngModel)]="fieldForm.isRequired"
+            [binary]="true"
+            inputId="isRequired"
+          />
+          <label for="isRequired">Required Field</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Placeholder</label>
+          <input
+            pInputText
+            [(ngModel)]="fieldForm.placeholder"
+            class="w-full"
+            placeholder="Placeholder text"
+          />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Help Text</label>
+          <input
+            pInputText
+            [(ngModel)]="fieldForm.helpText"
+            class="w-full"
+            placeholder="Help text for users"
+          />
+        </div>
+      </div>
+
+      @if (fieldForm.fieldType === 'dropdown' || fieldForm.fieldType ===
+      'multi_select') {
+      <div class="form-row">
+        <div class="form-field">
+          <label>Options</label>
+          <div class="options-list">
+            @for (opt of fieldForm.options; track $index) {
+            <div class="option-row">
+              <input
+                pInputText
+                [(ngModel)]="opt.label"
+                placeholder="Label"
+                class="option-input"
+              />
+              <input
+                pInputText
+                [(ngModel)]="opt.value"
+                placeholder="Value"
+                class="option-input"
+              />
+              <button
+                pButton
+                icon="pi pi-trash"
+                [text]="true"
+                [rounded]="true"
+                size="small"
+                severity="danger"
+                (click)="removeOption($index)"
+              ></button>
+            </div>
+            }
+            <button
+              pButton
+              label="Add Option"
+              icon="pi pi-plus"
+              [text]="true"
+              size="small"
+              (click)="addOption()"
+            ></button>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+    <ng-template pTemplate="footer">
+      <div class="dialog-footer">
+        <button
+          pButton
+          label="Cancel"
+          [text]="true"
+          class="cancel-btn"
+          (click)="fieldDialogVisible = false"
+        ></button>
+        <button
+          pButton
+          [label]="editingField ? 'Update' : 'Create'"
+          icon="pi pi-check"
+          (click)="saveField()"
+          [loading]="saving()"
+          [disabled]="
+            !fieldForm.name || !fieldForm.label || !fieldForm.fieldType
+          "
+          class="save-btn"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+</app-layout>

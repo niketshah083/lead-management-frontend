@@ -1,3 +1,5 @@
+// LeadStatus is now dynamic from database - keeping enum for backward compatibility
+// but components should use ILeadStatus from lead-status.model.ts for dynamic statuses
 export enum LeadStatus {
   NEW = 'new',
   CONTACTED = 'contacted',
@@ -51,7 +53,7 @@ export interface ILead {
     name: string;
     email: string;
   };
-  status: LeadStatus;
+  status: string; // Dynamic status name from database
   statusMasterId?: string;
   statusMaster?: {
     id: string;
@@ -78,10 +80,11 @@ export interface ILead {
 }
 
 export interface ILeadFilter {
-  status?: LeadStatus[];
+  status?: string[]; // Dynamic status names
   categoryId?: string;
   assignedToId?: string;
   unassignedOnly?: boolean;
+  search?: string;
   dateFrom?: string;
   dateTo?: string;
   page?: number;
@@ -114,8 +117,8 @@ export interface ISendMessage {
 export interface ILeadHistory {
   id: string;
   leadId: string;
-  previousStatus?: LeadStatus;
-  newStatus: LeadStatus;
+  previousStatus?: string; // Dynamic status name
+  newStatus: string; // Dynamic status name
   changedById: string;
   changedBy?: {
     id: string;

@@ -1,0 +1,180 @@
+<app-layout>
+  <p-toast />
+  <p-confirmDialog />
+
+  <div class="page-container">
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1 class="page-title">Categories</h1>
+        <p class="page-subtitle">Manage product categories and media assets</p>
+      </div>
+
+      <!-- Search in header -->
+      <div class="header-search">
+        <div class="search-wrapper">
+          <i class="pi pi-search search-icon"></i>
+          <input
+            pInputText
+            type="text"
+            placeholder="Search categories..."
+            class="search-input"
+            (input)="onSearch($event)"
+          />
+        </div>
+      </div>
+
+      @if (authService.isAdmin()) {
+      <button
+        pButton
+        label="Add Category"
+        icon="pi pi-plus"
+        class="add-btn"
+        (click)="navigateToCreate()"
+      ></button>
+      }
+    </div>
+
+    <!-- Data Table Card -->
+    <div class="table-card">
+      <p-table
+        #dt
+        [value]="categoryService.categories()"
+        [loading]="categoryService.loading()"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[5, 10, 25, 50]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} categories"
+        [globalFilterFields]="['name', 'description']"
+        styleClass="p-datatable-striped"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="name">
+              Name <p-sortIcon field="name"></p-sortIcon>
+            </th>
+            <th class="desc-col">Description</th>
+            <th class="keywords-col">Keywords</th>
+            <th class="media-col">Media</th>
+            <th pSortableColumn="isActive" class="status-col">
+              Status <p-sortIcon field="isActive"></p-sortIcon>
+            </th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-category>
+          <tr>
+            <td>
+              <div class="category-info">
+                <i class="pi pi-tag category-icon"></i>
+                <span class="category-name">{{ category.name }}</span>
+              </div>
+            </td>
+            <td class="desc-col">
+              <span class="desc-text"
+                >{{ category.description | slice : 0 : 50
+                }}{{ category.description?.length > 50 ? "..." : "" }}</span
+              >
+            </td>
+            <td class="keywords-col">
+              <div class="keywords-wrap">
+                @for (keyword of category.keywords?.slice(0, 3); track keyword)
+                {
+                <span class="keyword-badge">{{ keyword }}</span>
+                } @if (category.keywords?.length > 3) {
+                <span class="more-badge"
+                  >+{{ category.keywords.length - 3 }}</span
+                >
+                }
+              </div>
+            </td>
+            <td class="media-col">
+              <span class="media-count">
+                <i class="pi pi-file"></i>
+                {{ category.media?.length || 0 }} files
+              </span>
+            </td>
+            <td class="status-col">
+              <span
+                class="status-badge"
+                [class.active]="category.isActive"
+                [class.inactive]="!category.isActive"
+              >
+                <i
+                  [class]="
+                    category.isActive
+                      ? 'pi pi-check-circle'
+                      : 'pi pi-times-circle'
+                  "
+                ></i>
+                {{ category.isActive ? "Active" : "Inactive" }}
+              </span>
+            </td>
+            <td class="actions-col">
+              <div class="action-buttons">
+                <button
+                  pButton
+                  icon="pi pi-eye"
+                  [text]="true"
+                  [rounded]="true"
+                  size="small"
+                  class="view-btn"
+                  (click)="viewCategory(category)"
+                  pTooltip="View"
+                  tooltipPosition="top"
+                ></button>
+                @if (authService.isAdmin()) {
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  [text]="true"
+                  [rounded]="true"
+                  size="small"
+                  class="edit-btn"
+                  (click)="editCategory(category)"
+                  pTooltip="Edit"
+                  tooltipPosition="top"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  [text]="true"
+                  [rounded]="true"
+                  size="small"
+                  severity="danger"
+                  class="delete-btn"
+                  (click)="confirmDelete(category)"
+                  pTooltip="Delete"
+                  tooltipPosition="top"
+                ></button>
+                }
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <i class="pi pi-tags"></i>
+                <h3>No categories found</h3>
+                <p>Create your first category to get started</p>
+                @if (authService.isAdmin()) {
+                <button
+                  pButton
+                  label="Add Category"
+                  icon="pi pi-plus"
+                  (click)="navigateToCreate()"
+                ></button>
+                }
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+</app-layout>

@@ -1,0 +1,253 @@
+<app-layout>
+  <p-toast />
+  <p-confirmDialog />
+
+  <div class="page-container">
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1 class="page-title">Auto-Reply Templates</h1>
+        <p class="page-subtitle">Manage automated response templates</p>
+      </div>
+
+      <!-- Search in header -->
+      <div class="header-search">
+        <div class="search-wrapper">
+          <i class="pi pi-search search-icon"></i>
+          <input
+            pInputText
+            type="text"
+            placeholder="Search templates..."
+            class="search-input"
+            (input)="onSearch($event)"
+          />
+        </div>
+      </div>
+
+      @if (authService.isAdmin()) {
+      <button
+        pButton
+        label="Add Template"
+        icon="pi pi-plus"
+        class="add-btn"
+        (click)="openCreateDialog()"
+      ></button>
+      }
+    </div>
+
+    <!-- Data Table Card -->
+    <div class="table-card">
+      <p-table
+        #dt
+        [value]="templates()"
+        [loading]="loading()"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[5, 10, 25, 50]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} templates"
+        [globalFilterFields]="['triggerKeyword', 'messageContent']"
+        styleClass="p-datatable-striped"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="triggerKeyword" class="keyword-col">
+              Trigger Keyword <p-sortIcon field="triggerKeyword"></p-sortIcon>
+            </th>
+            <th class="message-col">Message Content</th>
+            <th class="category-col">Category</th>
+            <th pSortableColumn="priority" class="priority-col">
+              Priority <p-sortIcon field="priority"></p-sortIcon>
+            </th>
+            <th pSortableColumn="isActive" class="status-col">
+              Status <p-sortIcon field="isActive"></p-sortIcon>
+            </th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-template>
+          <tr>
+            <td class="keyword-col">
+              <span class="keyword-badge">
+                <i class="pi pi-hashtag"></i>
+                {{ template.triggerKeyword }}
+              </span>
+            </td>
+            <td class="message-col">
+              <div class="message-preview">
+                {{ template.messageContent }}
+              </div>
+            </td>
+            <td class="category-col">
+              @if (template.category) {
+              <span class="category-tag">{{ template.category.name }}</span>
+              } @else {
+              <span class="no-category">-</span>
+              }
+            </td>
+            <td class="priority-col">
+              <span class="priority-badge">{{ template.priority }}</span>
+            </td>
+            <td class="status-col">
+              <span
+                class="status-badge"
+                [class.active]="template.isActive"
+                [class.inactive]="!template.isActive"
+              >
+                <i
+                  [class]="
+                    template.isActive
+                      ? 'pi pi-check-circle'
+                      : 'pi pi-times-circle'
+                  "
+                ></i>
+                {{ template.isActive ? "Active" : "Inactive" }}
+              </span>
+            </td>
+            <td class="actions-col">
+              @if (authService.isAdmin()) {
+              <div class="action-buttons">
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  [text]="true"
+                  [rounded]="true"
+                  size="small"
+                  class="edit-btn"
+                  (click)="openEditDialog(template)"
+                  pTooltip="Edit"
+                  tooltipPosition="top"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  [text]="true"
+                  [rounded]="true"
+                  size="small"
+                  severity="danger"
+                  class="delete-btn"
+                  (click)="confirmDelete(template)"
+                  pTooltip="Delete"
+                  tooltipPosition="top"
+                ></button>
+              </div>
+              }
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <i class="pi pi-comments"></i>
+                <h3>No auto-reply templates found</h3>
+                <p>Create your first template to automate responses</p>
+                @if (authService.isAdmin()) {
+                <button
+                  pButton
+                  label="Add Template"
+                  icon="pi pi-plus"
+                  (click)="openCreateDialog()"
+                ></button>
+                }
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+
+  <!-- Create/Edit Dialog -->
+  <p-dialog
+    [(visible)]="dialogVisible"
+    [header]="isEditing ? 'Edit Template' : 'Create Template'"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: '600px', maxWidth: '95vw' }"
+    styleClass="template-dialog"
+  >
+    <div class="dialog-content">
+      <div class="form-row">
+        <div class="form-field">
+          <label for="category">Category <span class="required">*</span></label>
+          <p-select
+            [(ngModel)]="formData.categoryId"
+            [options]="categoryOptions()"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Select a category"
+            class="w-full"
+          />
+        </div>
+      </div>
+
+      <div class="form-row two-cols">
+        <div class="form-field">
+          <label for="keyword"
+            >Trigger Keyword <span class="required">*</span></label
+          >
+          <input
+            pInputText
+            id="keyword"
+            [(ngModel)]="formData.triggerKeyword"
+            placeholder="e.g., hello, price, info"
+            class="w-full"
+          />
+          <small class="hint">The keyword that triggers this auto-reply</small>
+        </div>
+        <div class="form-field">
+          <label for="priority">Priority</label>
+          <p-inputNumber
+            [(ngModel)]="formData.priority"
+            [min]="0"
+            [max]="100"
+            class="w-full"
+          />
+          <small class="hint"
+            >Higher priority templates are matched first</small
+          >
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label for="message"
+            >Message Content <span class="required">*</span></label
+          >
+          <textarea
+            pTextarea
+            id="message"
+            [(ngModel)]="formData.messageContent"
+            rows="5"
+            class="w-full"
+            placeholder="Enter the auto-reply message..."
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="dialog-footer">
+        <button
+          pButton
+          label="Cancel"
+          [text]="true"
+          class="cancel-btn"
+          (click)="dialogVisible = false"
+        ></button>
+        <button
+          pButton
+          [label]="isEditing ? 'Update' : 'Create'"
+          icon="pi pi-check"
+          (click)="saveTemplate()"
+          [loading]="saving()"
+          class="save-btn"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+</app-layout>
