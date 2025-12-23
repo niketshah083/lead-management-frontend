@@ -32,6 +32,7 @@ import { ILead, ILeadFilter } from '../../../../core/models';
 import { ILeadStatus } from '../../../../core/models/lead-status.model';
 import { LayoutComponent } from '../../../../shared/components/layout/layout.component';
 import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit-dialog/lead-edit-dialog.component';
+import { forkJoin } from 'rxjs';
 
 interface PendingStatusChange {
   lead: ILead;
@@ -154,23 +155,19 @@ export class LeadKanbanComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.loadStatuses();
-    this.loadStatuses();
-    this.loadLeads();
-    this.loadCategories();
-    this.loadUsers();
-    this.kanbanStateService.setViewPreference('kanban');
-  }
-
-  loadStatuses(): void {
-    this.leadStatusService.getAll().subscribe({
-      next: (response) => {
-        this.statuses.set(response.data);
-      },
-      error: () => {
-        console.warn('Failed to load lead statuses');
+    forkJoin([
+      this.leadStatusService.getAll(),
+      this.leadService.getCategories(),
+      this.leadService.getUsers(),
+    ]).subscribe({
+      next: (res) => {
+        this.statuses.set(res[0].data);
+        this.categories.set(res[1]);
+        this.users.set(res[2]);
+        this.loadLeads();
       },
     });
+    this.kanbanStateService.setViewPreference('kanban');
   }
 
   loadLeads(): void {
@@ -190,17 +187,6 @@ export class LeadKanbanComponent implements OnInit {
           summary: 'Error',
           detail: 'Failed to load leads',
         });
-      },
-    });
-  }
-
-  loadCategories(): void {
-    this.leadService.getCategories().subscribe({
-      next: (categories) => {
-        this.categories.set(categories);
-      },
-      error: () => {
-        console.warn('Failed to load categories');
       },
     });
   }

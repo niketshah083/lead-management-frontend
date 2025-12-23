@@ -9,6 +9,7 @@ import { TagModule } from 'primeng/tag';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
+import { DatePickerModule } from 'primeng/datepicker';
 import { MessageService } from 'primeng/api';
 import {
   AuthService,
@@ -38,6 +39,7 @@ import { LayoutComponent } from '../../shared/components/layout/layout.component
     TagModule,
     ProgressBarModule,
     InputTextModule,
+    DatePickerModule,
     LayoutComponent,
   ],
   providers: [MessageService],
@@ -50,17 +52,23 @@ import { LayoutComponent } from '../../shared/components/layout/layout.component
           <div class="header-info">
             <h1>{{ authService.currentUser()?.name }}'s Dashboard</h1>
             <div class="quick-filters">
-              <input
-                type="date"
-                [(ngModel)]="dateFromStr"
-                (change)="onDateChange()"
-                class="compact-date"
+              <p-datepicker
+                [(ngModel)]="dateFrom"
+                (onSelect)="onDateChange()"
+                [showIcon]="true"
+                dateFormat="mm/dd/yy"
+                placeholder="mm/dd/yyyy"
+                [style]="{ width: '140px' }"
+                inputStyleClass="compact-date-input"
               />
-              <input
-                type="date"
-                [(ngModel)]="dateToStr"
-                (change)="onDateChange()"
-                class="compact-date"
+              <p-datepicker
+                [(ngModel)]="dateTo"
+                (onSelect)="onDateChange()"
+                [showIcon]="true"
+                dateFormat="mm/dd/yy"
+                placeholder="mm/dd/yyyy"
+                [style]="{ width: '140px' }"
+                inputStyleClass="compact-date-input"
               />
               <button
                 pButton
@@ -126,13 +134,11 @@ import { LayoutComponent } from '../../shared/components/layout/layout.component
 
           <div class="kpi-card revenue">
             <div class="kpi-icon">
-              <i class="pi pi-dollar"></i>
+              <i class="pi pi-indian-rupee"></i>
             </div>
             <div class="kpi-content">
               <div class="kpi-value">
-                \${{
-                  businessReport()!.totalRevenue / 1000 | number : '1.0-0'
-                }}K
+                ₹{{ businessReport()!.totalRevenue / 1000 | number : '1.0-0' }}K
               </div>
               <div class="kpi-label">Revenue</div>
               <div class="kpi-trend">
@@ -289,11 +295,11 @@ import { LayoutComponent } from '../../shared/components/layout/layout.component
               </div>
               <div class="stat-item">
                 <div class="stat-icon value">
-                  <i class="pi pi-money-bill"></i>
+                  <i class="pi pi-indian-rupee"></i>
                 </div>
                 <div class="stat-content">
                   <div class="stat-value">
-                    \${{
+                    ₹{{
                       businessReport()!.avgDealValue / 1000 | number : '1.0-0'
                     }}K
                   </div>
@@ -384,9 +390,7 @@ import { LayoutComponent } from '../../shared/components/layout/layout.component
                   </td>
                   <td>
                     <span class="metric revenue"
-                      >\${{
-                        exec.totalRevenue / 1000 | number : '1.0-0'
-                      }}K</span
+                      >₹{{ exec.totalRevenue / 1000 | number : '1.0-0' }}K</span
                     >
                   </td>
                 </tr>
@@ -446,12 +450,16 @@ import { LayoutComponent } from '../../shared/components/layout/layout.component
         align-items: center;
       }
 
-      .compact-date {
-        padding: 0.5rem;
+      :host ::ng-deep .compact-date-input {
+        padding: 0.5rem 0.75rem;
         border: 1px solid #e2e8f0;
-        border-radius: 6px;
+        border-radius: 8px;
         font-size: 0.875rem;
         background: white;
+      }
+
+      :host ::ng-deep .p-datepicker {
+        border-radius: 8px;
       }
 
       .refresh-btn {
@@ -1038,8 +1046,8 @@ export class CompactDashboardComponent implements OnInit {
   loading = signal(false);
 
   // Filter properties
-  dateFromStr: string = '';
-  dateToStr: string = '';
+  dateFrom: Date | null = null;
+  dateTo: Date | null = null;
   selectedPeriod: { label: string; value: string } | null = null;
 
   // Status report specific filters
@@ -1332,12 +1340,12 @@ export class CompactDashboardComponent implements OnInit {
   getFilters(): IReportFilter {
     const filters: IReportFilter = {};
 
-    if (this.dateFromStr) {
-      filters.dateFrom = this.dateFromStr;
+    if (this.dateFrom) {
+      filters.dateFrom = this.dateFrom.toISOString().split('T')[0];
     }
 
-    if (this.dateToStr) {
-      filters.dateTo = this.dateToStr;
+    if (this.dateTo) {
+      filters.dateTo = this.dateTo.toISOString().split('T')[0];
     }
 
     return filters;

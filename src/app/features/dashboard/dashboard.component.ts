@@ -157,11 +157,11 @@ import { LayoutComponent } from '../../shared/components/layout/layout.component
           </div>
           <div class="stat-card stat-purple">
             <div class="stat-icon">
-              <i class="pi pi-dollar"></i>
+              <i class="pi pi-indian-rupee"></i>
             </div>
             <div class="stat-content">
               <span class="stat-value"
-                >\${{ businessReport()!.totalRevenue | number : '1.0-0' }}</span
+                >₹{{ businessReport()!.totalRevenue | number : '1.0-0' }}</span
               >
               <span class="stat-label">Total Revenue</span>
               <span class="stat-trend">from won deals</span>
@@ -169,11 +169,11 @@ import { LayoutComponent } from '../../shared/components/layout/layout.component
           </div>
           <div class="stat-card stat-teal">
             <div class="stat-icon">
-              <i class="pi pi-chart-bar"></i>
+              <i class="pi pi-indian-rupee"></i>
             </div>
             <div class="stat-content">
               <span class="stat-value"
-                >\${{ businessReport()!.avgDealValue | number : '1.0-0' }}</span
+                >₹{{ businessReport()!.avgDealValue | number : '1.0-0' }}</span
               >
               <span class="stat-label">Avg Deal Value</span>
               <span class="stat-trend">per won lead</span>
@@ -269,7 +269,7 @@ import { LayoutComponent } from '../../shared/components/layout/layout.component
                 </td>
                 <td>
                   <span class="metric-value metric-revenue"
-                    >\${{ exec.totalRevenue | number : '1.0-0' }}</span
+                    >₹{{ exec.totalRevenue | number : '1.0-0' }}</span
                   >
                 </td>
                 <td>
@@ -410,7 +410,7 @@ import { LayoutComponent } from '../../shared/components/layout/layout.component
                     >
                     @if (status.revenue > 0) {
                     <span class="status-revenue"
-                      >\${{ status.revenue | number : '1.0-0' }}</span
+                      >₹{{ status.revenue | number : '1.0-0' }}</span
                     >
                     }
                   </div>
@@ -754,7 +754,7 @@ import { LayoutComponent } from '../../shared/components/layout/layout.component
             </div>
             <div class="period-stat">
               <span class="period-value"
-                >\${{
+                >₹{{
                   periodReport()!.summary.totalRevenue | number : '1.0-0'
                 }}</span
               >
