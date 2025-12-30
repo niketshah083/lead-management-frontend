@@ -91,6 +91,7 @@ interface User {
             [filter]="true"
             filterPlaceholder="Search users"
             class="w-full"
+            appendTo="body"
           />
         </div>
         }
