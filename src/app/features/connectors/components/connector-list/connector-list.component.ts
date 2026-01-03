@@ -210,6 +210,11 @@ export class ConnectorListComponent implements OnInit {
       [ConnectorType.WHATSAPP]: 'WhatsApp',
       [ConnectorType.INDIAMART]: 'IndiaMART',
       [ConnectorType.TRADEINDIA]: 'TradeIndia',
+      [ConnectorType.EMAIL]: 'Email',
+      [ConnectorType.GMAIL]: 'Gmail',
+      [ConnectorType.OUTLOOK]: 'Outlook',
+      [ConnectorType.ZOHO_MAIL]: 'Zoho Mail',
+      [ConnectorType.IMAP_EMAIL]: 'IMAP Email',
     };
     return names[type] || type;
   }
@@ -229,6 +234,11 @@ export class ConnectorListComponent implements OnInit {
       [ConnectorType.WHATSAPP]: 'success',
       [ConnectorType.INDIAMART]: 'warn',
       [ConnectorType.TRADEINDIA]: 'warn',
+      [ConnectorType.EMAIL]: 'info',
+      [ConnectorType.GMAIL]: 'danger',
+      [ConnectorType.OUTLOOK]: 'info',
+      [ConnectorType.ZOHO_MAIL]: 'warn',
+      [ConnectorType.IMAP_EMAIL]: 'success',
     };
     return severities[type] || 'secondary';
   }

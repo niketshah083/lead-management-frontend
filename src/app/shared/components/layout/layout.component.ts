@@ -137,6 +137,15 @@ import { RoleBasedRecentChatsComponent } from '../role-based-recent-chats/role-b
             <span>Dashboard</span>
           </a>
           <a
+            routerLink="/calendar"
+            routerLinkActive="active"
+            class="crm-nav-item"
+            pRipple
+          >
+            <i class="pi pi-calendar"></i>
+            <span>Calendar</span>
+          </a>
+          <a
             routerLink="/leads"
             routerLinkActive="active"
             class="crm-nav-item"
@@ -269,6 +278,14 @@ import { RoleBasedRecentChatsComponent } from '../role-based-recent-chats/role-b
               (click)="closeMobileMenu()"
             >
               <i class="pi pi-home"></i><span>Dashboard</span>
+            </a>
+            <a
+              routerLink="/calendar"
+              routerLinkActive="active"
+              class="crm-drawer-nav-item"
+              (click)="closeMobileMenu()"
+            >
+              <i class="pi pi-calendar"></i><span>Calendar</span>
             </a>
             <a
               routerLink="/leads"

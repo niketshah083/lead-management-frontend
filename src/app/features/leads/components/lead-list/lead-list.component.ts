@@ -223,8 +223,10 @@ import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit
               <tr>
                 <th>Phone</th>
                 <th>Customer</th>
+                <th class="hidden-mobile">Source</th>
                 <th class="hidden-mobile">Category</th>
                 <th>Status</th>
+                <th class="hidden-mobile">Notes</th>
                 <th class="hidden-mobile">Assigned To</th>
                 <th class="hidden-mobile">Created</th>
                 <th>Actions</th>
@@ -239,6 +241,15 @@ import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit
                   <span class="customer-name">{{ lead.name || '-' }}</span>
                 </td>
                 <td class="hidden-mobile">
+                  <span
+                    class="source-badge"
+                    [class]="getSourceClass(lead.source)"
+                  >
+                    <i [class]="getSourceIcon(lead.source)"></i>
+                    {{ lead.source || '-' }}
+                  </span>
+                </td>
+                <td class="hidden-mobile">
                   <span class="category-badge">{{
                     lead.category?.name || '-'
                   }}</span>
@@ -249,6 +260,15 @@ import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit
                     [value]="lead.status"
                     styleClass="status-tag"
                   />
+                </td>
+                <td class="hidden-mobile">
+                  <span
+                    class="notes-text"
+                    [pTooltip]="lead.firstMessage"
+                    tooltipPosition="top"
+                  >
+                    {{ truncateNotes(lead.firstMessage) }}
+                  </span>
                 </td>
                 <td class="hidden-mobile">
                   <span class="assigned-to">{{
@@ -309,7 +329,7 @@ import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit
             </ng-template>
             <ng-template pTemplate="emptymessage">
               <tr>
-                <td colspan="7">
+                <td colspan="9">
                   <div class="empty-state">
                     <i class="pi pi-inbox empty-icon"></i>
                     <p class="empty-text">No leads found</p>
@@ -821,6 +841,95 @@ import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit
         font-weight: 500;
       }
 
+      /* Source Badge Styles */
+      .source-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      .source-badge i {
+        font-size: 0.7rem;
+      }
+
+      .source-indiamart {
+        background: rgba(255, 153, 0, 0.15);
+        color: #cc7a00;
+      }
+
+      .source-tradeindia {
+        background: rgba(0, 128, 0, 0.15);
+        color: #006600;
+      }
+
+      .source-gmail {
+        background: rgba(234, 67, 53, 0.15);
+        color: #c5221f;
+      }
+
+      .source-outlook {
+        background: rgba(0, 120, 212, 0.15);
+        color: #0078d4;
+      }
+
+      .source-zoho {
+        background: rgba(226, 35, 26, 0.15);
+        color: #e2231a;
+      }
+
+      .source-email {
+        background: rgba(107, 114, 128, 0.15);
+        color: #4b5563;
+      }
+
+      .source-whatsapp {
+        background: rgba(37, 211, 102, 0.15);
+        color: #128c7e;
+      }
+
+      .source-meta,
+      .source-facebook {
+        background: rgba(24, 119, 242, 0.15);
+        color: #1877f2;
+      }
+
+      .source-website {
+        background: rgba(99, 102, 241, 0.15);
+        color: #4f46e5;
+      }
+
+      .source-manual {
+        background: rgba(156, 163, 175, 0.15);
+        color: #6b7280;
+      }
+
+      .source-bulk {
+        background: rgba(16, 185, 129, 0.15);
+        color: #059669;
+      }
+
+      .source-default {
+        background: #f1f5f9;
+        color: #475569;
+      }
+
+      /* Notes text */
+      .notes-text {
+        color: #6b7280;
+        font-size: 0.8rem;
+        max-width: 150px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: inline-block;
+        cursor: default;
+      }
+
       :host ::ng-deep .status-tag {
         font-size: 0.75rem;
         font-weight: 600;
@@ -1247,6 +1356,48 @@ export class LeadListComponent implements OnInit {
       return 'warn';
     if (lowerStatus === 'qualified') return 'contrast';
     return 'info';
+  }
+
+  // Source display helpers
+  getSourceIcon(source: string): string {
+    const sourceIcons: Record<string, string> = {
+      IndiaMART: 'pi pi-globe',
+      TradeIndia: 'pi pi-globe',
+      Gmail: 'pi pi-envelope',
+      Outlook: 'pi pi-envelope',
+      'Zoho Mail': 'pi pi-envelope',
+      'Email (IMAP)': 'pi pi-envelope',
+      WhatsApp: 'pi pi-whatsapp',
+      'Meta Ads': 'pi pi-facebook',
+      Facebook: 'pi pi-facebook',
+      Website: 'pi pi-desktop',
+      'Manual Entry': 'pi pi-user',
+      'Bulk Upload': 'pi pi-upload',
+    };
+    return sourceIcons[source] || 'pi pi-question-circle';
+  }
+
+  getSourceClass(source: string): string {
+    const sourceClasses: Record<string, string> = {
+      IndiaMART: 'source-indiamart',
+      TradeIndia: 'source-tradeindia',
+      Gmail: 'source-gmail',
+      Outlook: 'source-outlook',
+      'Zoho Mail': 'source-zoho',
+      'Email (IMAP)': 'source-email',
+      WhatsApp: 'source-whatsapp',
+      'Meta Ads': 'source-meta',
+      Facebook: 'source-facebook',
+      Website: 'source-website',
+      'Manual Entry': 'source-manual',
+      'Bulk Upload': 'source-bulk',
+    };
+    return sourceClasses[source] || 'source-default';
+  }
+
+  truncateNotes(notes: string | null | undefined): string {
+    if (!notes) return '-';
+    return notes.length > 40 ? notes.substring(0, 40) + '...' : notes;
   }
 
   loadStatuses(): void {

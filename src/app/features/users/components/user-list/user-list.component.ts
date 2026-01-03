@@ -115,8 +115,10 @@ export class UserListComponent implements OnInit {
       .slice(0, 2);
   }
 
-  getAvatarColor(role: UserRole): string {
-    const colors: Record<UserRole, string> = {
+  getAvatarColor(role: UserRole | string): string {
+    const colors: Record<string, string> = {
+      [UserRole.SUPER_ADMIN]:
+        'linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)',
       [UserRole.ADMIN]: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
       [UserRole.MANAGER]: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
       [UserRole.CUSTOMER_EXECUTIVE]:
@@ -125,11 +127,11 @@ export class UserListComponent implements OnInit {
     return colors[role] || 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
   }
 
-  getRoleClass(role: UserRole): string {
+  getRoleClass(role: UserRole | string): string {
     return role.toLowerCase();
   }
 
-  formatRole(role: UserRole): string {
+  formatRole(role: UserRole | string): string {
     return role.replace(/_/g, ' ');
   }
 

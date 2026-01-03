@@ -165,6 +165,70 @@ export class ConnectorService {
     }>(`${this.basePath}/${id}/sync-tradeindia`, {});
   }
 
+  syncGmail(id: string): Observable<
+    IApiResponse<{
+      success: boolean;
+      message: string;
+      leadsCreated: number;
+      leadsDuplicate: number;
+    }>
+  > {
+    return this.apiService.post<{
+      success: boolean;
+      message: string;
+      leadsCreated: number;
+      leadsDuplicate: number;
+    }>(`${this.basePath}/${id}/sync-gmail`, {});
+  }
+
+  syncOutlook(id: string): Observable<
+    IApiResponse<{
+      success: boolean;
+      message: string;
+      leadsCreated: number;
+      leadsDuplicate: number;
+    }>
+  > {
+    return this.apiService.post<{
+      success: boolean;
+      message: string;
+      leadsCreated: number;
+      leadsDuplicate: number;
+    }>(`${this.basePath}/${id}/sync-outlook`, {});
+  }
+
+  syncZohoMail(id: string): Observable<
+    IApiResponse<{
+      success: boolean;
+      message: string;
+      leadsCreated: number;
+      leadsDuplicate: number;
+    }>
+  > {
+    return this.apiService.post<{
+      success: boolean;
+      message: string;
+      leadsCreated: number;
+      leadsDuplicate: number;
+    }>(`${this.basePath}/${id}/sync-zoho`, {});
+  }
+
+  syncImapEmail(id: string): Observable<
+    IApiResponse<{
+      success: boolean;
+      message: string;
+      leadsCreated: number;
+      leadsDuplicate: number;
+    }>
+  > {
+    return this.apiService.post<{
+      success: boolean;
+      message: string;
+      leadsCreated: number;
+      leadsDuplicate: number;
+    }>(`${this.basePath}/${id}/sync-imap`, {});
+  }
+
   getConnectorLogs(
     connectorId: string,
     filters?: { level?: string; page?: number; limit?: number }
@@ -206,6 +270,11 @@ export class ConnectorService {
       [ConnectorType.WHATSAPP]: 'pi-whatsapp',
       [ConnectorType.INDIAMART]: 'pi-shopping-cart',
       [ConnectorType.TRADEINDIA]: 'pi-globe',
+      [ConnectorType.EMAIL]: 'pi-envelope',
+      [ConnectorType.GMAIL]: 'pi-google',
+      [ConnectorType.OUTLOOK]: 'pi-microsoft',
+      [ConnectorType.ZOHO_MAIL]: 'pi-envelope',
+      [ConnectorType.IMAP_EMAIL]: 'pi-inbox',
     };
     return icons[type] || 'pi-plug';
   }

@@ -162,6 +162,7 @@
             [cdkDropListData]="column.leads"
             [id]="column.id"
             (cdkDropListDropped)="onDrop($event, column.id)"
+            [cdkDropListSortingDisabled]="true"
           >
             @for (lead of column.leads; track lead.id) {
             <div class="lead-card" cdkDrag [cdkDragData]="lead">
@@ -275,7 +276,8 @@
     [resizable]="false"
     [style]="{ width: '400px', maxWidth: '95vw' }"
     styleClass="status-dialog"
-    (onHide)="onStatusChangeCancel()"
+    [closable]="false"
+    appendTo="body"
   >
     <div class="dialog-content">
       @if (pendingStatusChange) {
@@ -294,9 +296,15 @@
           class="w-full"
         ></textarea>
       </div>
-    </div>
-    <ng-template pTemplate="footer">
-      <div class="dialog-footer">
+      <div
+        class="dialog-footer"
+        style="
+          margin-top: 1rem;
+          display: flex;
+          justify-content: flex-end;
+          gap: 0.5rem;
+        "
+      >
         <button
           pButton
           label="Cancel"
@@ -312,6 +320,6 @@
           class="save-btn"
         ></button>
       </div>
-    </ng-template>
+    </div>
   </p-dialog>
 </app-layout>

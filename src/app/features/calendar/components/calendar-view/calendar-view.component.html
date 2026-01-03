@@ -1,0 +1,505 @@
+<app-layout>
+  <p-toast />
+
+  <div class="calendar-container">
+    <!-- Header -->
+    <div class="calendar-header">
+      <div class="header-left">
+        <h1 class="page-title">Demo Calendar</h1>
+        <p class="page-subtitle">{{ headerDateRange() }}</p>
+      </div>
+
+      <div class="header-center">
+        <div class="nav-controls">
+          <button
+            pButton
+            icon="pi pi-chevron-left"
+            [rounded]="true"
+            [text]="true"
+            (click)="navigatePrevious()"
+            pTooltip="Previous"
+          ></button>
+          <button
+            pButton
+            label="Today"
+            [outlined]="true"
+            size="small"
+            (click)="goToToday()"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-chevron-right"
+            [rounded]="true"
+            [text]="true"
+            (click)="navigateNext()"
+            pTooltip="Next"
+          ></button>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="view-toggle">
+          <button
+            pButton
+            label="Day"
+            [outlined]="viewMode() !== 'day'"
+            size="small"
+            (click)="setViewMode('day')"
+          ></button>
+          <button
+            pButton
+            label="Week"
+            [outlined]="viewMode() !== 'week'"
+            size="small"
+            (click)="setViewMode('week')"
+          ></button>
+          <button
+            pButton
+            label="Month"
+            [outlined]="viewMode() !== 'month'"
+            size="small"
+            (click)="setViewMode('month')"
+          ></button>
+          <button
+            pButton
+            label="Agenda"
+            [outlined]="viewMode() !== 'agenda'"
+            size="small"
+            (click)="setViewMode('agenda')"
+          ></button>
+        </div>
+        <button
+          pButton
+          icon="pi pi-plus"
+          label="Schedule Demo"
+          (click)="openScheduleDialog()"
+        ></button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+      <div class="filter-controls">
+        <div class="filter-group">
+          <p-multiselect
+            [options]="statusOptions"
+            [(ngModel)]="selectedStatuses"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Filter by Status"
+            [showClear]="true"
+            (onChange)="onStatusFilterChange($event.value)"
+            [maxSelectedLabels]="2"
+            selectedItemsLabel="{0} statuses"
+          />
+        </div>
+        <div class="filter-group">
+          <p-multiselect
+            [options]="typeOptions"
+            [(ngModel)]="selectedTypes"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Filter by Type"
+            [showClear]="true"
+            (onChange)="onTypeFilterChange($event.value)"
+            [maxSelectedLabels]="2"
+            selectedItemsLabel="{0} types"
+          />
+        </div>
+        <div class="filter-group">
+          <p-select
+            [options]="categoryOptions()"
+            [(ngModel)]="selectedCategoryId"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Filter by Category"
+            [showClear]="true"
+            (onChange)="onCategoryFilterChange($event.value)"
+          />
+        </div>
+        @if (authService.isAdmin() || authService.isManager()) {
+        <div class="filter-group team-selector">
+          <p-select
+            [options]="userOptions()"
+            [(ngModel)]="selectedUserId"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="View Team Member"
+            [showClear]="true"
+            (onChange)="onUserFilterChange($event.value)"
+          />
+        </div>
+        } @if (activeFilterCount() > 0) {
+        <div class="filter-indicator">
+          <p-chip
+            [label]="activeFilterCount() + ' filter(s) active'"
+            [removable]="true"
+            (onRemove)="clearAllFilters()"
+          />
+        </div>
+        }
+      </div>
+      <div class="summary-info">
+        <span class="summary-item">
+          <i class="pi pi-calendar"></i>
+          Today: {{ getTodayDemoCount() }} demos
+        </span>
+        @if (getNextDemo(); as nextDemo) {
+        <span class="summary-item next-demo">
+          <i class="pi pi-clock"></i>
+          Next: {{ nextDemo.lead?.name || "Lead" }} at
+          {{ formatTime(nextDemo.scheduledAt) }}
+        </span>
+        }
+      </div>
+    </div>
+
+    <!-- Calendar Content -->
+    <div class="calendar-content" [class.loading]="loading()">
+      @if (loading()) {
+      <div class="loading-overlay">
+        <p-progressSpinner strokeWidth="4" />
+        <span>Loading calendar...</span>
+      </div>
+      }
+
+      <!-- Week View -->
+      @if (viewMode() === 'week') {
+      <div class="week-view">
+        <div class="week-header">
+          <div class="time-gutter"></div>
+          @for (day of weekDays(); track day.date.getTime()) {
+          <div class="day-header" [class.today]="day.isToday">
+            <span class="day-name">{{ day.date | date : "EEE" }}</span>
+            <span class="day-number">{{ day.date | date : "d" }}</span>
+          </div>
+          }
+        </div>
+        <div class="week-body">
+          <div class="time-column">
+            @for (slot of timeSlots; track slot.hour) {
+            <div class="time-slot">
+              <span class="time-label">{{ slot.label }}</span>
+            </div>
+            }
+          </div>
+          <div class="days-grid" cdkDropListGroup>
+            @for (day of weekDays(); track day.date.getTime()) {
+            <div
+              class="day-column"
+              [class.today]="day.isToday"
+              cdkDropList
+              [cdkDropListData]="{ date: day.date }"
+              [id]="getDropListId(day.date)"
+              (cdkDropListDropped)="onDemoDropWeek($event, day.date)"
+              [cdkDropListSortingDisabled]="true"
+            >
+              @for (slot of timeSlots; track slot.hour) {
+              <div class="hour-cell">
+                @for (demo of getDemosForHour(day.date, slot.hour); track
+                demo.id) {
+                <div
+                  class="demo-event"
+                  [class.draggable]="canDragDemo(demo)"
+                  [style.height.px]="getDemoHeight(demo)"
+                  [style.top.px]="getDemoMinuteOffset(demo)"
+                  [style.background-color]="getEffectiveColor(demo)"
+                  [class.starting-soon]="isStartingSoon(demo)"
+                  [class.imminent]="isImminent(demo)"
+                  [class.overdue]="isOverdue(demo)"
+                  cdkDrag
+                  [cdkDragData]="demo"
+                  [cdkDragDisabled]="!canDragDemo(demo)"
+                  (cdkDragStarted)="onDragStarted(demo)"
+                  (cdkDragEnded)="onDragEnded()"
+                  (click)="onDemoClick(demo, $event)"
+                  [pTooltip]="
+                    canDragDemo(demo)
+                      ? 'Drag to reschedule'
+                      : demo.lead?.name || 'Demo'
+                  "
+                >
+                  @if (isOverdue(demo)) {
+                  <div class="time-badge overdue-badge">
+                    <i class="pi pi-exclamation-triangle"></i>
+                    {{ getOverdueTime(demo) }}
+                  </div>
+                  } @else if (isImminent(demo)) {
+                  <div class="time-badge imminent-badge">
+                    <i class="pi pi-clock"></i>
+                    {{ getTimeUntilStart(demo) }}
+                  </div>
+                  } @else if (isStartingSoon(demo)) {
+                  <div class="time-badge starting-soon-badge">
+                    Starting Soon
+                  </div>
+                  }
+                  <div class="event-time">
+                    {{ formatTime(demo.scheduledAt) }}
+                  </div>
+                  <div class="event-title">{{ demo.lead?.name || "Lead" }}</div>
+                  <div class="event-type">
+                    {{ getTypeLabel(demo.demoType) }}
+                  </div>
+                  <div class="demo-event-placeholder" *cdkDragPlaceholder></div>
+                </div>
+                }
+              </div>
+              } @if (day.isToday && isCurrentHourVisible()) {
+              <div
+                class="current-time-indicator"
+                [style.top.px]="currentTimePosition()"
+              ></div>
+              }
+            </div>
+            }
+          </div>
+        </div>
+      </div>
+      }
+
+      <!-- Day View -->
+      @if (viewMode() === 'day') {
+      <div class="day-view">
+        <div class="day-header-single">
+          <span class="day-name">{{ currentDate() | date : "EEEE" }}</span>
+          <span class="day-date">{{
+            currentDate() | date : "MMMM d, yyyy"
+          }}</span>
+        </div>
+        <div class="day-body">
+          <div class="time-column">
+            @for (slot of timeSlots; track slot.hour) {
+            <div class="time-slot">
+              <span class="time-label">{{ slot.label }}</span>
+            </div>
+            }
+          </div>
+          <div
+            class="day-events-column"
+            cdkDropList
+            [cdkDropListData]="{ date: currentDate() }"
+            (cdkDropListDropped)="onDemoDropWeek($event, currentDate())"
+            [cdkDropListSortingDisabled]="true"
+          >
+            @for (slot of timeSlots; track slot.hour) {
+            <div class="hour-cell">
+              @for (demo of getDemosForHour(currentDate(), slot.hour); track
+              demo.id) {
+              <div
+                class="demo-event"
+                [class.draggable]="canDragDemo(demo)"
+                [style.height.px]="getDemoHeight(demo)"
+                [style.top.px]="getDemoMinuteOffset(demo)"
+                [style.background-color]="getEffectiveColor(demo)"
+                [class.starting-soon]="isStartingSoon(demo)"
+                [class.imminent]="isImminent(demo)"
+                [class.overdue]="isOverdue(demo)"
+                cdkDrag
+                [cdkDragData]="demo"
+                [cdkDragDisabled]="!canDragDemo(demo)"
+                (cdkDragStarted)="onDragStarted(demo)"
+                (cdkDragEnded)="onDragEnded()"
+                (click)="onDemoClick(demo, $event)"
+                [pTooltip]="
+                  canDragDemo(demo) ? 'Drag to reschedule' : undefined
+                "
+              >
+                @if (isOverdue(demo)) {
+                <div class="time-badge overdue-badge">
+                  <i class="pi pi-exclamation-triangle"></i>
+                  {{ getOverdueTime(demo) }}
+                </div>
+                } @else if (isImminent(demo)) {
+                <div class="time-badge imminent-badge">
+                  <i class="pi pi-clock"></i>
+                  {{ getTimeUntilStart(demo) }}
+                </div>
+                } @else if (isStartingSoon(demo)) {
+                <div class="time-badge starting-soon-badge">Starting Soon</div>
+                }
+                <div class="event-time">{{ formatTime(demo.scheduledAt) }}</div>
+                <div class="event-title">{{ demo.lead?.name || "Lead" }}</div>
+                <div class="event-type">{{ getTypeLabel(demo.demoType) }}</div>
+                <div class="event-duration">{{ demo.durationMinutes }} min</div>
+                <div class="demo-event-placeholder" *cdkDragPlaceholder></div>
+              </div>
+              }
+            </div>
+            } @if (isCurrentHourVisible()) {
+            <div
+              class="current-time-indicator"
+              [style.top.px]="currentTimePosition()"
+            ></div>
+            }
+          </div>
+        </div>
+      </div>
+      }
+
+      <!-- Month View -->
+      @if (viewMode() === 'month') {
+      <div class="month-view">
+        <div class="month-header">
+          <div class="weekday-header">Mon</div>
+          <div class="weekday-header">Tue</div>
+          <div class="weekday-header">Wed</div>
+          <div class="weekday-header">Thu</div>
+          <div class="weekday-header">Fri</div>
+          <div class="weekday-header">Sat</div>
+          <div class="weekday-header">Sun</div>
+        </div>
+        <div class="month-body">
+          @for (week of monthDays(); track $index) {
+          <div class="month-week">
+            @for (day of week; track day.date.getTime()) {
+            <div
+              class="month-day"
+              [class.today]="day.isToday"
+              [class.other-month]="!day.isCurrentMonth"
+            >
+              <span class="month-day-number">{{ day.date | date : "d" }}</span>
+              <div class="month-day-events">
+                @for (demo of day.demos.slice(0, 3); track demo.id) {
+                <div
+                  class="month-event"
+                  [style.background-color]="getStatusColor(demo.status)"
+                  (click)="onDemoClick(demo, $event)"
+                  [pTooltip]="
+                    demo.lead?.name + ' - ' + formatTime(demo.scheduledAt)
+                  "
+                >
+                  {{ formatTime(demo.scheduledAt) }}
+                  {{ demo.lead?.name || "Lead" }}
+                </div>
+                } @if (day.demos.length > 3) {
+                <div class="more-events">+{{ day.demos.length - 3 }} more</div>
+                }
+              </div>
+            </div>
+            }
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- Agenda View -->
+      @if (viewMode() === 'agenda') {
+      <div class="agenda-view">
+        @for (day of agendaDays(); track day.date.getTime()) { @if
+        (day.demos.length > 0) {
+        <div class="agenda-day">
+          <div class="agenda-day-header" [class.today]="day.isToday">
+            <span class="agenda-date">{{
+              day.date | date : "EEEE, MMMM d"
+            }}</span>
+            <span class="agenda-count">{{ day.demos.length }} demo(s)</span>
+          </div>
+          <div class="agenda-events">
+            @for (demo of day.demos; track demo.id) {
+            <div
+              class="agenda-event"
+              [class.starting-soon]="isStartingSoon(demo)"
+              [class.imminent]="isImminent(demo)"
+              [class.overdue]="isOverdue(demo)"
+              (click)="onDemoClick(demo, $event)"
+            >
+              <div class="agenda-event-time">
+                <span class="time">{{ formatTime(demo.scheduledAt) }}</span>
+                <span class="duration">{{ demo.durationMinutes }} min</span>
+                @if (isOverdue(demo)) {
+                <span class="time-indicator overdue">{{
+                  getOverdueTime(demo)
+                }}</span>
+                } @else if (isImminent(demo)) {
+                <span class="time-indicator imminent">{{
+                  getTimeUntilStart(demo)
+                }}</span>
+                } @else if (isStartingSoon(demo)) {
+                <span class="time-indicator starting-soon">Starting Soon</span>
+                }
+              </div>
+              <div
+                class="agenda-event-indicator"
+                [style.background-color]="getEffectiveColor(demo)"
+              ></div>
+              <div class="agenda-event-details">
+                <div class="event-lead">{{ demo.lead?.name || "Lead" }}</div>
+                <div class="event-meta">
+                  <span class="event-type-badge">{{
+                    getTypeLabel(demo.demoType)
+                  }}</span>
+                  <span
+                    class="event-status-badge"
+                    [style.color]="getEffectiveColor(demo)"
+                  >
+                    {{ getStatusLabel(demo.status) }}
+                  </span>
+                </div>
+                @if (demo.notes) {
+                <div class="event-notes">{{ demo.notes }}</div>
+                }
+              </div>
+              <div class="agenda-event-actions">
+                @if (canStartDemo(demo)) {
+                <button
+                  pButton
+                  icon="pi pi-play"
+                  label="Start"
+                  size="small"
+                  (click)="startDemo(demo); $event.stopPropagation()"
+                ></button>
+                }
+                <button
+                  pButton
+                  icon="pi pi-eye"
+                  [text]="true"
+                  [rounded]="true"
+                  pTooltip="View Details"
+                  (click)="onDemoClick(demo, $event)"
+                ></button>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+        } } @empty {
+        <div class="empty-agenda">
+          <i class="pi pi-calendar-times"></i>
+          <h3>No demos scheduled</h3>
+          <p>Schedule a demo to see it here</p>
+          <button
+            pButton
+            label="Schedule Demo"
+            icon="pi pi-plus"
+            (click)="openScheduleDialog()"
+          ></button>
+        </div>
+        }
+      </div>
+      }
+    </div>
+  </div>
+
+  <!-- Event Popover -->
+  @if (showEventPopover() && selectedDemo()) {
+  <app-demo-event-popover
+    [demo]="selectedDemo()"
+    [position]="popoverPosition()"
+    (close)="closePopover()"
+    (edit)="editDemo($event)"
+    (reschedule)="rescheduleDemo($event)"
+    (demoUpdated)="onPopoverDemoUpdated($event)"
+  />
+  }
+
+  <!-- Schedule Dialog -->
+  <app-demo-scheduler-dialog
+    [(visible)]="showScheduleDialog"
+    [selectedDate]="selectedScheduleDate()"
+    [editingDemo]="editingDemo()"
+    (demoScheduled)="onDemoScheduled($event)"
+    (demoUpdated)="onDemoUpdated($event)"
+  />
+</app-layout>

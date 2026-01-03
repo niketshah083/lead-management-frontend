@@ -7,6 +7,11 @@ export enum ConnectorType {
   WHATSAPP = 'whatsapp',
   INDIAMART = 'indiamart',
   TRADEINDIA = 'tradeindia',
+  EMAIL = 'email',
+  GMAIL = 'gmail',
+  OUTLOOK = 'outlook',
+  ZOHO_MAIL = 'zoho_mail',
+  IMAP_EMAIL = 'imap_email',
 }
 
 export enum ConnectorStatus {

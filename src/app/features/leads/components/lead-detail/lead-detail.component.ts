@@ -12,17 +12,35 @@ import { TextareaModule } from 'primeng/textarea';
 import { InputTextModule } from 'primeng/inputtext';
 import { CheckboxModule } from 'primeng/checkbox';
 import { AutoCompleteModule } from 'primeng/autocomplete';
+import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import {
   LeadService,
   AuthService,
   FloatingChatService,
   LeadStatusService,
+  CalendarService,
 } from '../../../../core/services';
-import { ILead, ILeadHistory, ILeadContact } from '../../../../core/models';
+import {
+  ILead,
+  ILeadHistory,
+  ILeadContact,
+  IDemoEvent,
+  DemoStatus,
+} from '../../../../core/models';
 import { ILeadStatus } from '../../../../core/models/lead-status.model';
 import { LayoutComponent } from '../../../../shared/components/layout/layout.component';
 import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit-dialog/lead-edit-dialog.component';
+import { DemoSchedulerDialogComponent } from '../../../calendar/components/demo-scheduler-dialog/demo-scheduler-dialog.component';
+
+// Interface for availability day display
+interface AvailabilityDay {
+  date: Date;
+  dayName: string;
+  dateFormatted: string;
+  isToday: boolean;
+  demos: IDemoEvent[];
+}
 
 @Component({
   selector: 'app-lead-detail',
@@ -41,8 +59,10 @@ import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit
     InputTextModule,
     CheckboxModule,
     AutoCompleteModule,
+    TooltipModule,
     LayoutComponent,
     LeadEditDialogComponent,
+    DemoSchedulerDialogComponent,
   ],
   providers: [MessageService],
   template: `
@@ -64,6 +84,24 @@ import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit
             routerLink="/leads"
           ></button>
           <div class="header-actions">
+            <button
+              pButton
+              label="Schedule Demo"
+              icon="pi pi-calendar-plus"
+              [outlined]="true"
+              (click)="openScheduleDemoDialog()"
+              [disabled]="!canScheduleDemo()"
+              pTooltip="Schedule a demo for this lead"
+              class="schedule-demo-btn"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-calendar"
+              [outlined]="true"
+              (click)="openAvailabilityDialog()"
+              pTooltip="View your availability for the next 7 days"
+              class="availability-btn"
+            ></button>
             <button
               pButton
               label="Edit"
@@ -493,6 +531,86 @@ import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit
         (leadUpdated)="onLeadUpdated($event)"
       />
 
+      <!-- Demo Scheduler Dialog -->
+      <app-demo-scheduler-dialog
+        [(visible)]="scheduleDemoDialogVisible"
+        [preselectedLead]="lead()"
+        [selectedDate]="selectedScheduleDate"
+        (demoScheduled)="onDemoScheduled($event)"
+      />
+
+      <!-- Mini Calendar Availability Dialog -->
+      <p-dialog
+        [(visible)]="availabilityDialogVisible"
+        header="Your Availability - Next 7 Days"
+        [modal]="true"
+        [style]="{ width: '600px' }"
+        [draggable]="false"
+        [resizable]="false"
+      >
+        <div class="availability-container">
+          @if (loadingAvailability()) {
+          <div class="availability-loading">
+            <i class="pi pi-spin pi-spinner"></i>
+            <span>Loading availability...</span>
+          </div>
+          } @else {
+          <div class="availability-grid">
+            @for (day of availabilityDays(); track day.date) {
+            <div class="availability-day" [class.today]="day.isToday">
+              <div class="day-header">
+                <span class="day-name">{{ day.dayName }}</span>
+                <span class="day-date">{{ day.dateFormatted }}</span>
+              </div>
+              <div class="day-slots">
+                @if (day.demos.length === 0) {
+                <div class="no-demos">
+                  <i class="pi pi-check-circle"></i>
+                  <span>Available all day</span>
+                </div>
+                } @else { @for (demo of day.demos; track demo.id) {
+                <div class="demo-slot" [class]="'status-' + demo.status">
+                  <span class="slot-time">{{
+                    formatSlotTime(demo.scheduledAt)
+                  }}</span>
+                  <span class="slot-duration"
+                    >{{ demo.durationMinutes }}min</span
+                  >
+                </div>
+                } }
+              </div>
+              <button
+                pButton
+                label="Schedule"
+                size="small"
+                [text]="true"
+                (click)="scheduleOnDay(day.date)"
+                class="schedule-day-btn"
+              ></button>
+            </div>
+            }
+          </div>
+          }
+        </div>
+        <ng-template pTemplate="footer">
+          <div class="dialog-footer">
+            <button
+              pButton
+              label="Close"
+              [text]="true"
+              severity="secondary"
+              (click)="availabilityDialogVisible = false"
+            ></button>
+            <button
+              pButton
+              label="Schedule Demo"
+              icon="pi pi-calendar-plus"
+              (click)="openScheduleDemoFromAvailability()"
+            ></button>
+          </div>
+        </ng-template>
+      </p-dialog>
+
       <!-- Status Change Comment Dialog -->
       <p-dialog
         [(visible)]="statusChangeDialogVisible"
@@ -733,6 +851,20 @@ import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit
       .chat-btn {
         background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
         border: none;
+      }
+      .schedule-demo-btn {
+        border-color: #3b82f6 !important;
+        color: #3b82f6 !important;
+      }
+      .schedule-demo-btn:hover {
+        background: rgba(59, 130, 246, 0.1) !important;
+      }
+      .availability-btn {
+        border-color: #8b5cf6 !important;
+        color: #8b5cf6 !important;
+      }
+      .availability-btn:hover {
+        background: rgba(139, 92, 246, 0.1) !important;
       }
       .float-chat-btn {
         background: rgba(37, 211, 102, 0.1) !important;
@@ -1327,6 +1459,124 @@ import { LeadEditDialogComponent } from '../../../../shared/components/lead-edit
           grid-template-columns: 1fr;
         }
       }
+
+      /* Availability Dialog Styles */
+      .availability-container {
+        padding: 0.5rem 0;
+      }
+      .availability-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem;
+        color: #6b7280;
+        gap: 0.75rem;
+      }
+      .availability-loading i {
+        font-size: 2rem;
+      }
+      .availability-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 0.5rem;
+      }
+      .availability-day {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        min-height: 150px;
+        border: 1px solid #e5e7eb;
+        transition: all 0.2s;
+      }
+      .availability-day:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+      }
+      .availability-day.today {
+        background: #eff6ff;
+        border-color: #3b82f6;
+      }
+      .day-header {
+        text-align: center;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .day-name {
+        display: block;
+        font-weight: 600;
+        font-size: 0.75rem;
+        color: #374151;
+        text-transform: uppercase;
+      }
+      .day-date {
+        display: block;
+        font-size: 0.7rem;
+        color: #6b7280;
+        margin-top: 0.15rem;
+      }
+      .day-slots {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        overflow-y: auto;
+        max-height: 80px;
+      }
+      .no-demos {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        color: #22c55e;
+        font-size: 0.65rem;
+        gap: 0.25rem;
+      }
+      .no-demos i {
+        font-size: 1rem;
+      }
+      .demo-slot {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.25rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.65rem;
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      .demo-slot.status-scheduled {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      .demo-slot.status-confirmed {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .demo-slot.status-in_progress {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .slot-time {
+        font-weight: 500;
+      }
+      .slot-duration {
+        opacity: 0.7;
+      }
+      .schedule-day-btn {
+        margin-top: auto;
+        padding-top: 0.5rem;
+        font-size: 0.7rem !important;
+      }
+      @media (max-width: 768px) {
+        .availability-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
     `,
   ],
 })
@@ -1341,6 +1591,13 @@ export class LeadDetailComponent implements OnInit {
   editDialogVisible = false;
   statusChangeDialogVisible = false;
   statusChangeComment = '';
+
+  // Demo scheduling
+  scheduleDemoDialogVisible = false;
+  availabilityDialogVisible = false;
+  loadingAvailability = signal(false);
+  availabilityDays = signal<AvailabilityDay[]>([]);
+  selectedScheduleDate: Date | null = null;
 
   // Inline editing
   editingField: string | null = null;
@@ -1406,7 +1663,8 @@ export class LeadDetailComponent implements OnInit {
     public authService: AuthService,
     private messageService: MessageService,
     private floatingChatService: FloatingChatService,
-    private leadStatusService: LeadStatusService
+    private leadStatusService: LeadStatusService,
+    private calendarService: CalendarService
   ) {}
 
   ngOnInit(): void {
@@ -1896,5 +2154,144 @@ export class LeadDetailComponent implements OnInit {
   onLeadUpdated(updatedLead: ILead): void {
     this.lead.set(updatedLead);
     this.loadHistory(updatedLead.id);
+  }
+
+  // Demo scheduling methods
+  canScheduleDemo(): boolean {
+    const lead = this.lead();
+    if (!lead) return false;
+    // Cannot schedule demos for closed or lost leads (Requirements 8.4)
+    const status = lead.status?.toLowerCase();
+    return status !== 'closed' && status !== 'lost' && status !== 'won';
+  }
+
+  openScheduleDemoDialog(): void {
+    if (!this.canScheduleDemo()) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Cannot Schedule',
+        detail: 'Cannot schedule demo for a closed or lost lead',
+      });
+      return;
+    }
+    this.scheduleDemoDialogVisible = true;
+  }
+
+  openAvailabilityDialog(): void {
+    this.availabilityDialogVisible = true;
+    this.loadAvailability();
+  }
+
+  loadAvailability(): void {
+    this.loadingAvailability.set(true);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(today);
+    endDate.setDate(endDate.getDate() + 7);
+
+    this.calendarService
+      .getDemos({
+        startDate: today.toISOString(),
+        endDate: endDate.toISOString(),
+        status: [
+          DemoStatus.SCHEDULED,
+          DemoStatus.CONFIRMED,
+          DemoStatus.IN_PROGRESS,
+        ],
+      })
+      .subscribe({
+        next: (response) => {
+          // response.data is the demos array (transformed by backend interceptor)
+          const demos = Array.isArray(response.data) ? response.data : [];
+          this.buildAvailabilityDays(demos);
+          this.loadingAvailability.set(false);
+        },
+        error: () => {
+          this.loadingAvailability.set(false);
+          this.buildAvailabilityDays([]);
+        },
+      });
+  }
+
+  private buildAvailabilityDays(demos: IDemoEvent[]): void {
+    const days: AvailabilityDay[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() + i);
+
+      const dayDemos = demos
+        .filter((demo) => {
+          const demoDate = new Date(demo.scheduledAt);
+          return demoDate.toDateString() === date.toDateString();
+        })
+        .sort(
+          (a, b) =>
+            new Date(a.scheduledAt).getTime() -
+            new Date(b.scheduledAt).getTime()
+        );
+
+      days.push({
+        date,
+        dayName: dayNames[date.getDay()],
+        dateFormatted: `${monthNames[date.getMonth()]} ${date.getDate()}`,
+        isToday: i === 0,
+        demos: dayDemos,
+      });
+    }
+
+    this.availabilityDays.set(days);
+  }
+
+  formatSlotTime(scheduledAt: string | Date): string {
+    const date = new Date(scheduledAt);
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  }
+
+  scheduleOnDay(date: Date): void {
+    this.selectedScheduleDate = date;
+    this.availabilityDialogVisible = false;
+    this.scheduleDemoDialogVisible = true;
+  }
+
+  openScheduleDemoFromAvailability(): void {
+    this.availabilityDialogVisible = false;
+    this.scheduleDemoDialogVisible = true;
+  }
+
+  onDemoScheduled(demo: IDemoEvent): void {
+    this.scheduleDemoDialogVisible = false;
+    this.selectedScheduleDate = null;
+    this.loadHistory(this.lead()!.id);
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Demo Scheduled',
+      detail: `Demo scheduled for ${new Date(
+        demo.scheduledAt
+      ).toLocaleString()}`,
+    });
   }
 }

@@ -28,6 +28,7 @@ export interface ILead {
   businessName?: string;
   email?: string;
   pincode?: string;
+  source?: string; // Lead source (IndiaMART, Gmail, WhatsApp, etc.)
   // Address fields
   addressLine1?: string;
   addressLine2?: string;
@@ -66,6 +67,7 @@ export interface ILead {
     statusType?: string;
   };
   notes?: string;
+  firstMessage?: string; // First message content (product, notes, etc.)
   slaStatus?: {
     firstResponseDue: Date;
     resolutionDue: Date;

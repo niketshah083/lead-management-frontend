@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: '/api',
-  wsUrl: '',
+  apiUrl: 'https://leadapi.mehtaindia.com/api',
+  wsUrl: 'https://leadapi.mehtaindia.com',
 };

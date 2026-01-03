@@ -173,6 +173,66 @@ import {
                     </div>
                   </div>
                 </ng-container>
+                <ng-container *ngIf="connector()!.type === 'email'">
+                  <div class="webhook-config">
+                    <h3><i class="pi pi-envelope"></i> Email Webhook Setup</h3>
+                    <p class="hint">
+                      Configure your email forwarding service to send emails to
+                      this webhook URL
+                    </p>
+                    <div class="webhook-url-box">
+                      <code>{{ getWebhookFullUrl() }}</code
+                      ><button
+                        pButton
+                        icon="pi pi-copy"
+                        [text]="true"
+                        pTooltip="Copy URL"
+                        (click)="copyToClipboard(getWebhookFullUrl())"
+                      ></button>
+                    </div>
+                    <h3><i class="pi pi-key"></i> Webhook Secret</h3>
+                    <p class="hint">
+                      Include this secret in the x-webhook-signature header
+                    </p>
+                    <div class="webhook-url-box">
+                      <code>{{ connector()!.webhookSecret }}</code
+                      ><button
+                        pButton
+                        icon="pi pi-copy"
+                        [text]="true"
+                        pTooltip="Copy Secret"
+                        (click)="
+                          copyToClipboard(connector()!.webhookSecret || '')
+                        "
+                      ></button>
+                    </div>
+                    <div class="setup-instructions">
+                      <h4>
+                        <i class="pi pi-info-circle"></i> Setup Instructions
+                      </h4>
+                      <ol>
+                        <li>
+                          Choose an email forwarding service (SendGrid Inbound
+                          Parse, Mailgun, Postmark, etc.)
+                        </li>
+                        <li>
+                          Configure the service to forward emails to the webhook
+                          URL above
+                        </li>
+                        <li>
+                          Set up the x-webhook-signature header with the secret
+                        </li>
+                        <li>
+                          Configure field mapping below to match your email
+                          format
+                        </li>
+                        <li>
+                          Test by sending an email to your configured address
+                        </li>
+                      </ol>
+                    </div>
+                  </div>
+                </ng-container>
                 <ng-container *ngIf="connector()!.type === 'indiamart'">
                   <div class="webhook-config">
                     <h3>
@@ -251,6 +311,202 @@ import {
                         [loading]="syncingTradeIndia()"
                         [disabled]="!isConfigValid()"
                       ></button>
+                    </div>
+                  </div>
+                </ng-container>
+                <ng-container *ngIf="connector()!.type === 'gmail'">
+                  <div class="sync-config">
+                    <h3><i class="pi pi-google"></i> Gmail Sync Status</h3>
+                    <p class="hint">
+                      Sync emails from your Gmail account to create leads.
+                      Connect your account first, then sync.
+                    </p>
+                    <div class="sync-status-box">
+                      <div class="sync-info">
+                        <span class="sync-label">Last Sync:</span>
+                        <span
+                          class="sync-value"
+                          *ngIf="configValues['lastSyncTime']"
+                        >
+                          {{ configValues['lastSyncTime'] | date : 'medium' }}
+                        </span>
+                        <span
+                          class="sync-value"
+                          *ngIf="!configValues['lastSyncTime']"
+                          >Never</span
+                        >
+                      </div>
+                      <div class="sync-info">
+                        <span class="sync-label">Sync Status:</span>
+                        <span
+                          class="sync-value"
+                          [class.syncing]="
+                            configValues['syncStatus'] === 'syncing'
+                          "
+                        >
+                          {{ configValues['syncStatus'] || 'idle' | titlecase }}
+                        </span>
+                      </div>
+                      <button
+                        pButton
+                        label="Sync Now"
+                        icon="pi pi-sync"
+                        (click)="syncGmail()"
+                        [loading]="syncingGmail()"
+                        [disabled]="connector()!.status !== 'connected'"
+                      ></button>
+                    </div>
+                  </div>
+                </ng-container>
+                <ng-container *ngIf="connector()!.type === 'outlook'">
+                  <div class="sync-config">
+                    <h3><i class="pi pi-microsoft"></i> Outlook Sync Status</h3>
+                    <p class="hint">
+                      Sync emails from your Outlook/Microsoft 365 account to
+                      create leads. Connect your account first, then sync.
+                    </p>
+                    <div class="sync-status-box">
+                      <div class="sync-info">
+                        <span class="sync-label">Last Sync:</span>
+                        <span
+                          class="sync-value"
+                          *ngIf="configValues['lastSyncTime']"
+                        >
+                          {{ configValues['lastSyncTime'] | date : 'medium' }}
+                        </span>
+                        <span
+                          class="sync-value"
+                          *ngIf="!configValues['lastSyncTime']"
+                          >Never</span
+                        >
+                      </div>
+                      <div class="sync-info">
+                        <span class="sync-label">Sync Status:</span>
+                        <span
+                          class="sync-value"
+                          [class.syncing]="
+                            configValues['syncStatus'] === 'syncing'
+                          "
+                        >
+                          {{ configValues['syncStatus'] || 'idle' | titlecase }}
+                        </span>
+                      </div>
+                      <button
+                        pButton
+                        label="Sync Now"
+                        icon="pi pi-sync"
+                        (click)="syncOutlook()"
+                        [loading]="syncingOutlook()"
+                        [disabled]="connector()!.status !== 'connected'"
+                      ></button>
+                    </div>
+                  </div>
+                </ng-container>
+                <ng-container *ngIf="connector()!.type === 'zoho_mail'">
+                  <div class="sync-config">
+                    <h3>
+                      <i class="pi pi-envelope"></i> Zoho Mail Sync Status
+                    </h3>
+                    <p class="hint">
+                      Sync emails from your Zoho Mail account to create leads.
+                      Connect your account first, then sync.
+                    </p>
+                    <div class="sync-status-box">
+                      <div class="sync-info">
+                        <span class="sync-label">Last Sync:</span>
+                        <span
+                          class="sync-value"
+                          *ngIf="configValues['lastSyncTime']"
+                        >
+                          {{ configValues['lastSyncTime'] | date : 'medium' }}
+                        </span>
+                        <span
+                          class="sync-value"
+                          *ngIf="!configValues['lastSyncTime']"
+                          >Never</span
+                        >
+                      </div>
+                      <div class="sync-info">
+                        <span class="sync-label">Sync Status:</span>
+                        <span
+                          class="sync-value"
+                          [class.syncing]="
+                            configValues['syncStatus'] === 'syncing'
+                          "
+                        >
+                          {{ configValues['syncStatus'] || 'idle' | titlecase }}
+                        </span>
+                      </div>
+                      <button
+                        pButton
+                        label="Sync Now"
+                        icon="pi pi-sync"
+                        (click)="syncZohoMail()"
+                        [loading]="syncingZohoMail()"
+                        [disabled]="connector()!.status !== 'connected'"
+                      ></button>
+                    </div>
+                  </div>
+                </ng-container>
+                <ng-container *ngIf="connector()!.type === 'imap_email'">
+                  <div class="sync-config">
+                    <h3><i class="pi pi-inbox"></i> IMAP Email Sync Status</h3>
+                    <p class="hint">
+                      Sync emails from your email account using IMAP. Configure
+                      credentials below, save, then sync.
+                    </p>
+                    <div class="sync-status-box">
+                      <div class="sync-info">
+                        <span class="sync-label">Last Sync:</span>
+                        <span
+                          class="sync-value"
+                          *ngIf="configValues['lastSyncTime']"
+                        >
+                          {{ configValues['lastSyncTime'] | date : 'medium' }}
+                        </span>
+                        <span
+                          class="sync-value"
+                          *ngIf="!configValues['lastSyncTime']"
+                          >Never</span
+                        >
+                      </div>
+                      <div class="sync-info">
+                        <span class="sync-label">Sync Status:</span>
+                        <span
+                          class="sync-value"
+                          [class.syncing]="
+                            configValues['syncStatus'] === 'syncing'
+                          "
+                        >
+                          {{ configValues['syncStatus'] || 'idle' | titlecase }}
+                        </span>
+                      </div>
+                      <button
+                        pButton
+                        label="Sync Now"
+                        icon="pi pi-sync"
+                        (click)="syncImapEmail()"
+                        [loading]="syncingImapEmail()"
+                        [disabled]="!isConfigValid()"
+                      ></button>
+                    </div>
+                    <div class="setup-instructions">
+                      <h4>
+                        <i class="pi pi-info-circle"></i> Common IMAP Settings
+                      </h4>
+                      <ul
+                        style="margin: 0; padding-left: 1.25rem; color: #374151; font-size: 0.875rem; line-height: 1.8;"
+                      >
+                        <li>
+                          <strong>Gmail:</strong> imap.gmail.com:993 (use App
+                          Password)
+                        </li>
+                        <li>
+                          <strong>Outlook:</strong> outlook.office365.com:993
+                        </li>
+                        <li><strong>Yahoo:</strong> imap.mail.yahoo.com:993</li>
+                        <li><strong>Zoho:</strong> imap.zoho.com:993</li>
+                      </ul>
                     </div>
                   </div>
                 </ng-container>
@@ -606,6 +862,21 @@ import {
       }
       .connector-icon[data-type='tradeindia'] {
         background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      }
+      .connector-icon[data-type='email'] {
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+      }
+      .connector-icon[data-type='gmail'] {
+        background: linear-gradient(135deg, #ea4335 0%, #c5221f 100%);
+      }
+      .connector-icon[data-type='outlook'] {
+        background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%);
+      }
+      .connector-icon[data-type='zoho_mail'] {
+        background: linear-gradient(135deg, #f9a825 0%, #f57c00 100%);
+      }
+      .connector-icon[data-type='imap_email'] {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
       }
       .page-subtitle {
         margin: 0.25rem 0 0;
@@ -978,6 +1249,10 @@ export class ConnectorDetailComponent implements OnInit {
   savingMapping = signal(false);
   savingConfig = signal(false);
   syncingTradeIndia = signal(false);
+  syncingGmail = signal(false);
+  syncingOutlook = signal(false);
+  syncingZohoMail = signal(false);
+  syncingImapEmail = signal(false);
   testResult = signal<{
     success: boolean;
     message: string;
@@ -1085,6 +1360,11 @@ export class ConnectorDetailComponent implements OnInit {
       [ConnectorType.WHATSAPP]: 'WhatsApp',
       [ConnectorType.INDIAMART]: 'IndiaMART',
       [ConnectorType.TRADEINDIA]: 'TradeIndia',
+      [ConnectorType.EMAIL]: 'Email',
+      [ConnectorType.GMAIL]: 'Gmail',
+      [ConnectorType.OUTLOOK]: 'Outlook',
+      [ConnectorType.ZOHO_MAIL]: 'Zoho Mail',
+      [ConnectorType.IMAP_EMAIL]: 'IMAP Email',
     };
     return names[c.type] || c.type;
   }
@@ -1211,6 +1491,106 @@ export class ConnectorDetailComponent implements OnInit {
           severity: 'error',
           summary: 'Error',
           detail: 'Failed to sync TradeIndia leads',
+        });
+      },
+    });
+  }
+  syncGmail(): void {
+    const c = this.connector();
+    if (!c || c.type !== 'gmail') return;
+    this.syncingGmail.set(true);
+    this.connectorService.syncGmail(c.id).subscribe({
+      next: (response) => {
+        const data = response.data;
+        this.messageService.add({
+          severity: data.success ? 'success' : 'warn',
+          summary: data.success ? 'Sync Complete' : 'Sync Issue',
+          detail: `${data.message}. Created: ${data.leadsCreated}, Duplicates: ${data.leadsDuplicate}`,
+        });
+        this.syncingGmail.set(false);
+        this.loadConnector(c.id);
+      },
+      error: () => {
+        this.syncingGmail.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to sync Gmail emails',
+        });
+      },
+    });
+  }
+  syncOutlook(): void {
+    const c = this.connector();
+    if (!c || c.type !== 'outlook') return;
+    this.syncingOutlook.set(true);
+    this.connectorService.syncOutlook(c.id).subscribe({
+      next: (response) => {
+        const data = response.data;
+        this.messageService.add({
+          severity: data.success ? 'success' : 'warn',
+          summary: data.success ? 'Sync Complete' : 'Sync Issue',
+          detail: `${data.message}. Created: ${data.leadsCreated}, Duplicates: ${data.leadsDuplicate}`,
+        });
+        this.syncingOutlook.set(false);
+        this.loadConnector(c.id);
+      },
+      error: () => {
+        this.syncingOutlook.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to sync Outlook emails',
+        });
+      },
+    });
+  }
+  syncZohoMail(): void {
+    const c = this.connector();
+    if (!c || c.type !== 'zoho_mail') return;
+    this.syncingZohoMail.set(true);
+    this.connectorService.syncZohoMail(c.id).subscribe({
+      next: (response) => {
+        const data = response.data;
+        this.messageService.add({
+          severity: data.success ? 'success' : 'warn',
+          summary: data.success ? 'Sync Complete' : 'Sync Issue',
+          detail: `${data.message}. Created: ${data.leadsCreated}, Duplicates: ${data.leadsDuplicate}`,
+        });
+        this.syncingZohoMail.set(false);
+        this.loadConnector(c.id);
+      },
+      error: () => {
+        this.syncingZohoMail.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to sync Zoho Mail emails',
+        });
+      },
+    });
+  }
+  syncImapEmail(): void {
+    const c = this.connector();
+    if (!c || c.type !== 'imap_email') return;
+    this.syncingImapEmail.set(true);
+    this.connectorService.syncImapEmail(c.id).subscribe({
+      next: (response) => {
+        const data = response.data;
+        this.messageService.add({
+          severity: data.success ? 'success' : 'warn',
+          summary: data.success ? 'Sync Complete' : 'Sync Issue',
+          detail: `${data.message}. Created: ${data.leadsCreated}, Duplicates: ${data.leadsDuplicate}`,
+        });
+        this.syncingImapEmail.set(false);
+        this.loadConnector(c.id);
+      },
+      error: () => {
+        this.syncingImapEmail.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to sync IMAP emails',
         });
       },
     });

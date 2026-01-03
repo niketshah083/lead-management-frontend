@@ -16,6 +16,10 @@ export interface IDashboardMetrics {
     count: number;
   }[];
   leadsByStatus: { status: string; count: number }[];
+  leadsBySource: {
+    source: string;
+    count: number;
+  }[];
 }
 
 export interface IBusinessReport {

@@ -1,0 +1,1078 @@
+// Variables
+$primary-color: #3b82f6;
+$success-color: #10b981;
+$warning-color: #f59e0b;
+$danger-color: #ef4444;
+$orange-color: #f97316;
+$text-primary: #1f2937;
+$text-secondary: #6b7280;
+$text-muted: #9ca3af;
+$border-color: #e5e7eb;
+$bg-light: #f9fafb;
+$bg-white: #ffffff;
+$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+$radius-sm: 4px;
+$radius-md: 8px;
+$radius-lg: 12px;
+
+// Status colors matching requirements
+$status-scheduled: #3b82f6; // Blue
+$status-confirmed: #22c55e; // Green
+$status-starting-soon: #f59e0b; // Yellow
+$status-imminent: #f97316; // Orange (within 15 min)
+$status-overdue: #ef4444; // Red
+$status-completed: #6b7280; // Gray
+$status-cancelled: #6b7280; // Gray
+
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.calendar-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 64px);
+  padding: 1rem 1.5rem;
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    padding: 0.75rem;
+    height: calc(100vh - 60px);
+  }
+}
+
+// Header
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  @media (max-width: 992px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.header-left {
+  .page-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $text-primary;
+  }
+
+  .page-subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem;
+    color: $text-secondary;
+  }
+}
+
+.header-center {
+  .nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    width: 100%;
+  }
+}
+
+.view-toggle {
+  display: flex;
+  gap: 0.25rem;
+  background: $bg-light;
+  padding: 0.25rem;
+  border-radius: $radius-md;
+
+  button {
+    border-radius: $radius-sm;
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+// Filter Bar
+.filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: $bg-white;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  flex: 1;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+}
+
+.filter-group {
+  min-width: 160px;
+
+  &.team-selector {
+    min-width: 180px;
+    border-left: 1px solid $border-color;
+    padding-left: 0.75rem;
+
+    @media (max-width: 768px) {
+      border-left: none;
+      padding-left: 0;
+      border-top: 1px solid $border-color;
+      padding-top: 0.75rem;
+    }
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+}
+
+.filter-indicator {
+  display: flex;
+  align-items: center;
+
+  .filter-chip {
+    background: rgba($primary-color, 0.1);
+    color: $primary-color;
+    font-size: 0.75rem;
+    
+    &:hover {
+      background: rgba($primary-color, 0.15);
+    }
+  }
+}
+
+.summary-info {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-left: auto;
+  font-size: 0.875rem;
+  color: $text-secondary;
+
+  @media (max-width: 768px) {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  i {
+    color: $primary-color;
+  }
+
+  &.next-demo {
+    color: $warning-color;
+    font-weight: 500;
+  }
+}
+
+// Calendar Content
+.calendar-content {
+  flex: 1;
+  min-height: 0;
+  background: $bg-white;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-md;
+  overflow: hidden;
+  position: relative;
+
+  &.loading {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+}
+
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  z-index: 100;
+
+  span {
+    color: $text-secondary;
+  }
+}
+
+// Week View
+.week-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.week-header {
+  display: flex;
+  border-bottom: 1px solid $border-color;
+  flex-shrink: 0;
+}
+
+.time-gutter {
+  width: 60px;
+  flex-shrink: 0;
+  border-right: 1px solid $border-color;
+}
+
+.day-header {
+  flex: 1;
+  padding: 0.75rem;
+  text-align: center;
+  border-right: 1px solid $border-color;
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &.today {
+    background: rgba($primary-color, 0.05);
+
+    .day-number {
+      background: $primary-color;
+      color: white;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  .day-name {
+    display: block;
+    font-size: 0.75rem;
+    color: $text-secondary;
+    text-transform: uppercase;
+  }
+
+  .day-number {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin-top: 0.25rem;
+  }
+}
+
+.week-body {
+  display: flex;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.time-column {
+  width: 60px;
+  flex-shrink: 0;
+  border-right: 1px solid $border-color;
+}
+
+.time-slot {
+  height: 60px;
+  border-bottom: 1px solid $border-color;
+  position: relative;
+}
+
+.time-label {
+  position: absolute;
+  top: -8px;
+  right: 8px;
+  font-size: 0.7rem;
+  color: $text-muted;
+  background: $bg-white;
+  padding: 0 2px;
+}
+
+.days-grid {
+  display: flex;
+  flex: 1;
+}
+
+.day-column {
+  flex: 1;
+  border-right: 1px solid $border-color;
+  position: relative;
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &.today {
+    background: rgba($primary-color, 0.02);
+  }
+}
+
+.hour-cell {
+  height: 60px;
+  border-bottom: 1px solid $border-color;
+  position: relative;
+  padding: 2px;
+  overflow: visible;
+}
+
+// Demo Event
+.demo-event {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  min-height: 24px;
+  padding: 4px 6px;
+  border-radius: $radius-sm;
+  color: white;
+  font-size: 0.7rem;
+  cursor: pointer;
+  overflow: hidden;
+  z-index: 1;
+  transition: transform 0.15s, box-shadow 0.15s;
+  touch-action: none; // Important for drag and drop on touch devices
+
+  &:hover {
+    transform: scale(1.02);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 2;
+  }
+
+  // Starting soon indicator (within 60 minutes)
+  &.starting-soon {
+    box-shadow: 0 0 0 2px rgba($warning-color, 0.5);
+  }
+
+  // Imminent indicator (within 15 minutes) - pulsing border animation
+  &.imminent {
+    animation: pulse-border 1.5s ease-in-out infinite;
+    box-shadow: 0 0 0 3px rgba($orange-color, 0.6);
+  }
+
+  // Overdue indicator
+  &.overdue {
+    opacity: 0.9;
+    box-shadow: 0 0 0 2px rgba($danger-color, 0.7);
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 3px,
+        rgba(255, 255, 255, 0.1) 3px,
+        rgba(255, 255, 255, 0.1) 6px
+      );
+      pointer-events: none;
+    }
+  }
+
+  &.draggable {
+    cursor: grab;
+    
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  &.cdk-drag-disabled {
+    cursor: not-allowed;
+    opacity: 0.8;
+  }
+
+  // When being dragged
+  &.cdk-drag-dragging {
+    z-index: 1000;
+  }
+}
+
+// Time-based badges
+.time-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-size: 0.55rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 2px;
+  white-space: nowrap;
+
+  i {
+    font-size: 0.5rem;
+  }
+
+  &.starting-soon-badge {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+  }
+
+  &.imminent-badge {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+    animation: badge-pulse 1s ease-in-out infinite;
+  }
+
+  &.overdue-badge {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+  }
+}
+
+// Pulsing border animation for imminent demos
+@keyframes pulse-border {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba($orange-color, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba($orange-color, 0.3), 0 0 12px rgba($orange-color, 0.4);
+  }
+}
+
+// Badge pulse animation
+@keyframes badge-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+// Drag and drop styles
+.cdk-drag-preview {
+  box-sizing: border-box;
+  border-radius: $radius-sm;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  opacity: 0.9;
+  z-index: 1000 !important;
+  background: $primary-color;
+  color: white;
+  padding: 8px 12px;
+  min-width: 120px;
+}
+
+.demo-drag-preview {
+  background: $primary-color;
+  color: white;
+  padding: 8px 12px;
+  border-radius: $radius-sm;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  min-width: 120px;
+
+  .preview-time {
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+
+  .preview-title {
+    font-size: 0.75rem;
+    opacity: 0.9;
+  }
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.3;
+  background: rgba($primary-color, 0.3);
+  border: 2px dashed $primary-color;
+  border-radius: $radius-sm;
+}
+
+.cdk-drag-animating {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.demo-event-placeholder {
+  background: rgba($primary-color, 0.2);
+  border: 2px dashed $primary-color;
+  border-radius: $radius-sm;
+  min-height: 30px;
+}
+
+.day-column.cdk-drop-list-dragging,
+.day-events-column.cdk-drop-list-dragging {
+  .hour-cell {
+    background: rgba($primary-color, 0.02);
+  }
+}
+
+// Highlight drop zones when dragging
+.day-column.cdk-drop-list-receiving,
+.day-events-column.cdk-drop-list-receiving {
+  background: rgba($primary-color, 0.05);
+  
+  .hour-cell {
+    border-color: rgba($primary-color, 0.3);
+  }
+}
+
+.drag-over {
+  .hour-cell {
+    border-color: rgba($primary-color, 0.3);
+  }
+}
+
+// Legacy pulse animation (kept for backward compatibility)
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba($warning-color, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba($warning-color, 0);
+  }
+}
+
+.event-time {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.event-title {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-type {
+  font-size: 0.65rem;
+  opacity: 0.9;
+}
+
+.event-duration {
+  font-size: 0.65rem;
+  opacity: 0.8;
+}
+
+// Current Time Indicator
+.current-time-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: $danger-color;
+  z-index: 10;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: -4px;
+    width: 10px;
+    height: 10px;
+    background: $danger-color;
+    border-radius: 50%;
+  }
+}
+
+// Day View
+.day-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.day-header-single {
+  padding: 1rem;
+  text-align: center;
+  border-bottom: 1px solid $border-color;
+
+  .day-name {
+    display: block;
+    font-size: 1rem;
+    color: $text-secondary;
+  }
+
+  .day-date {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: $text-primary;
+  }
+}
+
+.day-body {
+  display: flex;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.day-events-column {
+  flex: 1;
+  position: relative;
+}
+
+// Month View
+.month-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.month-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid $border-color;
+}
+
+.weekday-header {
+  padding: 0.75rem;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: $text-secondary;
+  text-transform: uppercase;
+  border-right: 1px solid $border-color;
+
+  &:last-child {
+    border-right: none;
+  }
+}
+
+.month-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.month-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  flex: 1;
+  min-height: 100px;
+}
+
+.month-day {
+  border-right: 1px solid $border-color;
+  border-bottom: 1px solid $border-color;
+  padding: 0.5rem;
+  min-height: 80px;
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &.today {
+    background: rgba($primary-color, 0.05);
+
+    .month-day-number {
+      background: $primary-color;
+      color: white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  &.other-month {
+    background: $bg-light;
+
+    .month-day-number {
+      color: $text-muted;
+    }
+  }
+}
+
+.month-day-number {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: $text-primary;
+}
+
+.month-day-events {
+  margin-top: 0.25rem;
+}
+
+.month-event {
+  padding: 2px 4px;
+  margin-bottom: 2px;
+  border-radius: $radius-sm;
+  font-size: 0.65rem;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.more-events {
+  font-size: 0.65rem;
+  color: $text-secondary;
+  padding: 2px 4px;
+  cursor: pointer;
+
+  &:hover {
+    color: $primary-color;
+  }
+}
+
+// Agenda View
+.agenda-view {
+  padding: 1rem;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.agenda-day {
+  margin-bottom: 1.5rem;
+}
+
+.agenda-day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: $bg-light;
+  border-radius: $radius-md;
+  margin-bottom: 0.75rem;
+
+  &.today {
+    background: rgba($primary-color, 0.1);
+    border-left: 3px solid $primary-color;
+  }
+
+  .agenda-date {
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  .agenda-count {
+    font-size: 0.875rem;
+    color: $text-secondary;
+  }
+}
+
+.agenda-events {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.agenda-event {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  background: $bg-white;
+  border: 1px solid $border-color;
+  border-radius: $radius-md;
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s;
+
+  &:hover {
+    box-shadow: $shadow-md;
+    border-color: $primary-color;
+  }
+
+  &.starting-soon {
+    border-color: $warning-color;
+    background: rgba($warning-color, 0.05);
+  }
+
+  &.imminent {
+    border-color: $orange-color;
+    background: rgba($orange-color, 0.08);
+    animation: agenda-pulse-border 1.5s ease-in-out infinite;
+  }
+
+  &.overdue {
+    border-color: $danger-color;
+    background: rgba($danger-color, 0.05);
+  }
+}
+
+// Agenda pulsing border for imminent demos
+@keyframes agenda-pulse-border {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba($orange-color, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba($orange-color, 0.2);
+  }
+}
+
+.agenda-event-time {
+  min-width: 70px;
+  text-align: right;
+
+  .time {
+    display: block;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  .duration {
+    display: block;
+    font-size: 0.75rem;
+    color: $text-muted;
+  }
+
+  .time-indicator {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin-top: 4px;
+    padding: 2px 4px;
+    border-radius: 2px;
+    text-align: center;
+
+    &.starting-soon {
+      background: rgba($warning-color, 0.15);
+      color: $warning-color;
+    }
+
+    &.imminent {
+      background: rgba($orange-color, 0.15);
+      color: $orange-color;
+      animation: badge-pulse 1s ease-in-out infinite;
+    }
+
+    &.overdue {
+      background: rgba($danger-color, 0.15);
+      color: $danger-color;
+    }
+  }
+}
+
+.agenda-event-indicator {
+  width: 4px;
+  height: 100%;
+  min-height: 40px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.agenda-event-details {
+  flex: 1;
+  min-width: 0;
+
+  .event-lead {
+    font-weight: 600;
+    color: $text-primary;
+    margin-bottom: 0.25rem;
+  }
+
+  .event-meta {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .event-type-badge {
+    color: $text-secondary;
+  }
+
+  .event-status-badge {
+    font-weight: 500;
+  }
+
+  .event-notes {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: $text-secondary;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.agenda-event-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.empty-agenda {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  color: $text-secondary;
+
+  i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: $text-muted;
+  }
+
+  h3 {
+    margin: 0 0 0.5rem;
+    color: $text-primary;
+  }
+
+  p {
+    margin: 0 0 1rem;
+  }
+}
+
+// Event Popover
+.event-popover {
+  position: fixed;
+  width: 320px;
+  background: $bg-white;
+  border-radius: $radius-lg;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid $border-color;
+
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: $text-primary;
+  }
+}
+
+.popover-body {
+  padding: 1rem;
+}
+
+.popover-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  i {
+    color: $text-secondary;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  span, a {
+    font-size: 0.875rem;
+    color: $text-primary;
+  }
+
+  a {
+    color: $primary-color;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &.notes {
+    span {
+      color: $text-secondary;
+      font-size: 0.8rem;
+    }
+  }
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: $radius-sm;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.popover-actions {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-top: 1px solid $border-color;
+  background: $bg-light;
+}
+
+.popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+}
+
+// Schedule Dialog
+.schedule-dialog-content {
+  padding: 1rem 0;
+  color: $text-secondary;
+}
+
+// PrimeNG Overrides
+:host ::ng-deep {
+  .p-multiselect,
+  .p-select {
+    width: 100%;
+
+    .p-multiselect-label,
+    .p-select-label {
+      font-size: 0.875rem;
+    }
+  }
+
+  .p-progressspinner {
+    width: 40px;
+    height: 40px;
+  }
+}

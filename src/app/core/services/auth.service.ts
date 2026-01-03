@@ -21,7 +21,14 @@ export class AuthService {
 
   readonly currentUser = this.currentUserSignal.asReadonly();
   readonly isAuthenticated = computed(() => !!this.tokenSignal());
-  readonly isAdmin = computed(() => this.currentUserSignal()?.role === 'admin');
+  readonly isSuperAdmin = computed(
+    () => this.currentUserSignal()?.role === 'super_admin'
+  );
+  readonly isAdmin = computed(
+    () =>
+      this.currentUserSignal()?.role === 'admin' ||
+      this.currentUserSignal()?.role === 'super_admin'
+  );
   readonly isManager = computed(
     () => this.currentUserSignal()?.role === 'manager'
   );
@@ -88,6 +95,9 @@ export class AuthService {
 
   hasRole(roles: string[]): boolean {
     const user = this.currentUserSignal();
-    return user ? roles.includes(user.role) : false;
+    if (!user) return false;
+    // Super admin has access to everything
+    if (user.role === 'super_admin') return true;
+    return roles.includes(user.role);
   }
 }

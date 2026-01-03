@@ -14,3 +14,4 @@ export * from './notification.service';
 export * from './role-based-chat.service';
 export * from './connector.service';
 export * from './business-type.service';
+export * from './calendar.service';

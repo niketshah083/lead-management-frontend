@@ -24,6 +24,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'calendar',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import(
+        './features/calendar/components/calendar-view/calendar-view.component'
+      ).then((m) => m.CalendarViewComponent),
+  },
+  {
     path: 'leads',
     canActivate: [authGuard],
     children: [

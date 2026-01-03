@@ -37,6 +37,7 @@ import { forkJoin } from 'rxjs';
 interface PendingStatusChange {
   lead: ILead;
   previousStatus: string;
+  previousStatusMasterId: string | undefined;
   targetStatus: string;
   targetStatusMasterId: string;
   event: CdkDragDrop<ILead[]>;
@@ -113,6 +114,7 @@ export class LeadKanbanComponent implements OnInit {
   statusChangeDialogVisible = false;
   statusChangeComment = '';
   pendingStatusChange: PendingStatusChange | null = null;
+  statusChangeConfirmed = false;
 
   // Edit dialog
   selectedLead = signal<ILead | null>(null);
@@ -491,6 +493,12 @@ export class LeadKanbanComponent implements OnInit {
     event: CdkDragDrop<ILead[]>,
     targetColumnId: string
   ): Promise<void> {
+    console.log('onDrop called:', {
+      targetColumnId,
+      previousContainer: event.previousContainer.id,
+      container: event.container.id,
+    });
+
     if (event.previousContainer === event.container) {
       // Reordering within the same column
       moveItemInArray(
@@ -502,6 +510,11 @@ export class LeadKanbanComponent implements OnInit {
     }
 
     const lead = event.item.data as ILead;
+    console.log('Lead being moved:', {
+      leadId: lead.id,
+      currentStatus: lead.status,
+      currentStatusMasterId: lead.statusMasterId,
+    });
 
     // Only allow drag-drop for status grouping
     if (this.selectedGroupBy !== 'status') {
@@ -517,6 +530,8 @@ export class LeadKanbanComponent implements OnInit {
     const targetStatusMaster = this.statuses().find(
       (s) => s.id === targetColumnId
     );
+    console.log('Target status master:', targetStatusMaster);
+
     if (!targetStatusMaster) {
       this.messageService.add({
         severity: 'error',
@@ -527,24 +542,54 @@ export class LeadKanbanComponent implements OnInit {
     }
 
     const previousStatus = lead.status;
+    const previousStatusMasterId = lead.statusMasterId;
 
     // Store pending change and show dialog
     this.pendingStatusChange = {
       lead,
       previousStatus,
+      previousStatusMasterId,
       targetStatus: targetStatusMaster.name,
       targetStatusMasterId: targetStatusMaster.id,
       event,
     };
     this.statusChangeComment = '';
     this.statusChangeDialogVisible = true;
+    console.log(
+      'Dialog should be visible now:',
+      this.statusChangeDialogVisible
+    );
   }
 
   onStatusChangeConfirm(): void {
-    if (!this.pendingStatusChange) return;
+    console.log(
+      'onStatusChangeConfirm called, pendingStatusChange:',
+      this.pendingStatusChange
+    );
 
-    const { lead, previousStatus, targetStatus, targetStatusMasterId, event } =
-      this.pendingStatusChange;
+    if (!this.pendingStatusChange) {
+      console.log('No pending status change, returning');
+      return;
+    }
+
+    this.statusChangeConfirmed = true;
+
+    const {
+      lead,
+      previousStatus,
+      previousStatusMasterId,
+      targetStatus,
+      targetStatusMasterId,
+      event,
+    } = this.pendingStatusChange;
+
+    console.log('Status change confirm - calling API:', {
+      leadId: lead.id,
+      previousStatus,
+      previousStatusMasterId,
+      targetStatus,
+      targetStatusMasterId,
+    });
 
     // Optimistic update - move the card
     transferArrayItem(
@@ -554,8 +599,9 @@ export class LeadKanbanComponent implements OnInit {
       event.currentIndex
     );
 
-    // Update lead status locally
+    // Update lead status locally (both status name and statusMasterId)
     lead.status = targetStatus;
+    lead.statusMasterId = targetStatusMasterId;
 
     // Update column counts
     this.updateColumnCounts();
@@ -569,16 +615,19 @@ export class LeadKanbanComponent implements OnInit {
         targetStatusMasterId
       )
       .subscribe({
-        next: () => {
+        next: (response) => {
+          console.log('Status update success:', response);
           this.messageService.add({
             severity: 'success',
             summary: 'Status Updated',
             detail: `Lead moved to ${this.getStatusTitle(targetStatus)}`,
           });
         },
-        error: () => {
+        error: (error) => {
+          console.error('Status update error:', error);
           // Revert on failure
           lead.status = previousStatus;
+          lead.statusMasterId = previousStatusMasterId;
           transferArrayItem(
             event.container.data,
             event.previousContainer.data,
@@ -602,10 +651,15 @@ export class LeadKanbanComponent implements OnInit {
   }
 
   onStatusChangeCancel(): void {
-    // Just close the dialog without making changes
-    this.statusChangeDialogVisible = false;
-    this.pendingStatusChange = null;
-    this.statusChangeComment = '';
+    console.log('onStatusChangeCancel called');
+    // Only cancel if we haven't confirmed
+    if (!this.statusChangeConfirmed) {
+      // Just close the dialog without making changes
+      this.statusChangeDialogVisible = false;
+      this.pendingStatusChange = null;
+      this.statusChangeComment = '';
+    }
+    this.statusChangeConfirmed = false;
   }
 
   private updateColumnCounts(): void {

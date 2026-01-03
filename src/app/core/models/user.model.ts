@@ -1,6 +1,7 @@
 import { ICategory } from './category.model';
 
 export enum UserRole {
+  SUPER_ADMIN = 'super_admin',
   ADMIN = 'admin',
   MANAGER = 'manager',
   CUSTOMER_EXECUTIVE = 'customer_executive',
@@ -11,7 +12,7 @@ export interface IUser {
   email: string;
   name: string;
   phone?: string;
-  role: UserRole;
+  role: UserRole | string;
   managerId?: string;
   manager?: IUser;
   categories?: ICategory[];
@@ -25,14 +26,14 @@ export interface ICreateUser {
   password: string;
   name: string;
   phone?: string;
-  role: UserRole;
+  role: UserRole | string;
   managerId?: string;
 }
 
 export interface IUpdateUser {
   name?: string;
   phone?: string;
-  role?: UserRole;
+  role?: UserRole | string;
   managerId?: string;
   isActive?: boolean;
 }
