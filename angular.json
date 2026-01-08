@@ -58,6 +58,27 @@
                 }
               ]
             },
+            "production-accomation": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "3MB",
+                  "maximumError": "5MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "15kB",
+                  "maximumError": "18kB"
+                }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.accomation.prod.ts"
+                }
+              ]
+            },
             "development": {
               "optimization": false,
               "extractLicenses": false,
@@ -74,6 +95,9 @@
             },
             "development": {
               "buildTarget": "frontend:build:development"
+            },
+            "production-accomation": {
+              "buildTarget": "frontend:build:production-accomation"
             }
           },
           "defaultConfiguration": "development"
